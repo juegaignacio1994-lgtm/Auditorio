@@ -1,18 +1,35 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  eachDayOfInterval, 
+  isSameMonth, 
+  isSameDay, 
+  addMonths, 
+  subMonths,
+  isToday,
+  startOfWeek,
+  endOfWeek
+} from "date-fns";
 import { 
   ArrowLeft, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  MapPin, 
-  Filter,
-  MoreVertical
+  ChevronLeft, 
+  ChevronRight, 
+  Plus,
+  Clock,
+  MapPin
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEvents, EventType } from "@/lib/events-context";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useEvents, EventType, CalendarEvent } from "@/lib/events-context";
 import { cn } from "@/lib/utils";
 
 const eventTypeColors: Record<EventType, string> = {
@@ -22,15 +39,38 @@ const eventTypeColors: Record<EventType, string> = {
   reminder: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
+const eventTypeDotColors: Record<EventType, string> = {
+  meeting: "bg-blue-500",
+  personal: "bg-green-500",
+  work: "bg-purple-500",
+  reminder: "bg-orange-500",
+};
+
 export default function EventsListPage() {
   const { events } = useEvents();
-  
-  // Sort events by creation date (newest first) to show "additions"
-  const sortedEvents = [...events].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(monthStart);
+  const calendarStart = startOfWeek(monthStart);
+  const calendarEnd = endOfWeek(monthEnd);
+
+  const calendarDays = eachDayOfInterval({
+    start: calendarStart,
+    end: calendarEnd,
+  });
+
+  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+
+  const getEventsForDay = (date: Date) => {
+    return events.filter(event => isSameDay(event.date, date))
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  };
 
   return (
     <div className="min-h-screen bg-background/50 p-4 md:p-8 font-sans flex justify-center">
-      <div className="w-full max-w-4xl flex flex-col gap-6">
+      <div className="w-full max-w-6xl flex flex-col gap-6">
         
         {/* Header */}
         <motion.div 
@@ -45,87 +85,123 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-display font-bold text-gray-900">Event Log</h1>
-              <p className="text-muted-foreground text-sm">Recent additions to your calendar</p>
+              <h1 className="text-2xl font-display font-bold text-gray-900">Full Calendar</h1>
+              <p className="text-muted-foreground text-sm">View all your activities at a glance</p>
             </div>
           </div>
           
-          <Button variant="outline" className="rounded-xl border-border/60 bg-white/50 gap-2 hidden sm:flex">
-            <Filter className="h-4 w-4" /> Filter
-          </Button>
+          <div className="flex items-center gap-2 bg-white/50 rounded-full p-1 border border-border/60">
+            <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-full h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="font-semibold min-w-[120px] text-center">
+              {format(currentMonth, 'MMMM yyyy')}
+            </span>
+            <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-full h-8 w-8">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </motion.div>
 
-        {/* List */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden">
-          <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-800">All Events ({events.length})</h2>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sorted by Recently Added</div>
+        {/* Calendar Grid */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden flex flex-col flex-1"
+        >
+          {/* Days Header */}
+          <div className="grid grid-cols-7 border-b border-border/40 bg-white/40">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="py-4 text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {day}
+              </div>
+            ))}
           </div>
           
-          <div className="divide-y divide-border/40">
-            {sortedEvents.map((event, index) => (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="p-6 hover:bg-white/60 transition-colors group flex flex-col sm:flex-row gap-4 sm:items-center"
-              >
-                {/* Date Box */}
-                <div className="flex-shrink-0 flex sm:flex-col items-center justify-center bg-white border border-border/50 rounded-2xl h-16 w-16 sm:h-20 sm:w-20 shadow-sm gap-2 sm:gap-0">
-                  <span className="text-xs font-bold text-primary uppercase tracking-wide">{format(event.date, 'MMM')}</span>
-                  <span className="text-xl sm:text-2xl font-display font-bold text-gray-900">{format(event.date, 'd')}</span>
-                </div>
+          {/* Days Grid */}
+          <div className="grid grid-cols-7 grid-rows-5 sm:grid-rows-6 flex-1 min-h-[600px]">
+            {calendarDays.map((day, dayIdx) => {
+              const dayEvents = getEventsForDay(day);
+              const isSelectedMonth = isSameMonth(day, monthStart);
+              const isTodayDate = isToday(day);
 
-                {/* Event Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="text-lg font-bold text-gray-900 truncate pr-4">{event.title}</h3>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity -mt-1">
-                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-4 w-4 text-primary/60" />
-                      <span>{event.startTime} - {event.endTime}</span>
-                    </div>
-                    
-                    {event.location && (
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4 text-primary/60" />
-                        <span>{event.location}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-1.5">
-                      <CalendarIcon className="h-4 w-4 text-primary/60" />
-                      <span>Added {format(event.createdAt, 'MMM d, h:mm a')}</span>
-                    </div>
-                  </div>
-                  
-                  {event.description && (
-                    <p className="mt-2 text-sm text-gray-600 line-clamp-1">{event.description}</p>
+              return (
+                <div 
+                  key={day.toString()}
+                  className={cn(
+                    "min-h-[120px] border-b border-r border-border/40 p-2 transition-colors hover:bg-white/60 flex flex-col gap-1",
+                    !isSelectedMonth && "bg-muted/20 text-muted-foreground/50",
+                    dayIdx % 7 === 6 && "border-r-0" // Remove right border for last column
                   )}
+                >
+                  <div className="flex justify-between items-start">
+                    <span className={cn(
+                      "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
+                      isTodayDate ? "bg-primary text-white" : "text-muted-foreground"
+                    )}>
+                      {format(day, 'd')}
+                    </span>
+                    {dayEvents.length > 0 && (
+                      <span className="text-[10px] font-bold text-muted-foreground/70 bg-white/50 px-1.5 py-0.5 rounded-full">
+                        {dayEvents.length}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col gap-1 mt-1 overflow-y-auto custom-scrollbar max-h-[100px]">
+                    {dayEvents.map(event => (
+                      <Popover key={event.id}>
+                        <PopoverTrigger asChild>
+                          <button className={cn(
+                            "text-left text-xs px-2 py-1 rounded-md truncate border w-full transition-all hover:scale-[1.02] hover:shadow-sm",
+                            eventTypeColors[event.type]
+                          )}>
+                            <span className="font-semibold mr-1">{event.startTime}</span>
+                            {event.title}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-0 rounded-2xl overflow-hidden border-border/50 shadow-xl backdrop-blur-xl bg-white/90">
+                          <div className={cn("h-2 w-full", eventTypeDotColors[event.type].replace("bg-", "bg-opacity-50 bg-"))} />
+                          <div className="p-5">
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-bold text-lg">{event.title}</h3>
+                              <Badge variant="outline" className={cn("capitalize", eventTypeColors[event.type])}>
+                                {event.type}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                               <div className="flex items-center gap-2">
+                                 <Clock className="h-4 w-4 text-primary" />
+                                 <span>{format(event.date, 'EEEE, MMMM do')}</span>
+                               </div>
+                               <div className="flex items-center gap-2 pl-6 text-xs">
+                                 <span>{event.startTime} - {event.endTime}</span>
+                               </div>
+                               {event.location && (
+                                 <div className="flex items-center gap-2">
+                                   <MapPin className="h-4 w-4 text-primary" />
+                                   <span>{event.location}</span>
+                                 </div>
+                               )}
+                            </div>
+                            
+                            {event.description && (
+                              <div className="bg-muted/30 p-3 rounded-xl text-sm text-foreground/80">
+                                {event.description}
+                              </div>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ))}
+                  </div>
                 </div>
-
-                {/* Tag */}
-                <div className="flex-shrink-0 self-start sm:self-center mt-2 sm:mt-0">
-                   <Badge variant="secondary" className={cn("capitalize shadow-sm px-3 py-1 rounded-full", eventTypeColors[event.type])}>
-                      {event.type}
-                   </Badge>
-                </div>
-              </motion.div>
-            ))}
-            
-            {sortedEvents.length === 0 && (
-              <div className="p-12 text-center text-muted-foreground">
-                No events found.
-              </div>
-            )}
+              );
+            })}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
