@@ -1,82 +1,90 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { 
   format, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  isSameMonth, 
-  isSameDay, 
-  addMonths, 
-  subMonths,
-  isToday,
-  startOfWeek,
-  endOfWeek
+  addDays, 
+  subDays, 
+  isToday, 
+  startOfDay, 
+  isSameDay,
+  differenceInMinutes,
+  setHours,
+  setMinutes,
+  getHours,
+  getMinutes
 } from "date-fns";
 import { 
   ArrowLeft, 
   ChevronLeft, 
   ChevronRight, 
-  Plus,
-  Clock,
-  MapPin
+  Clock, 
+  MapPin,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEvents, EventType, CalendarEvent } from "@/lib/events-context";
 import { cn } from "@/lib/utils";
 
 const eventTypeColors: Record<EventType, string> = {
-  meeting: "bg-blue-100 text-blue-700 border-blue-200",
-  personal: "bg-green-100 text-green-700 border-green-200",
-  work: "bg-purple-100 text-purple-700 border-purple-200",
-  reminder: "bg-orange-100 text-orange-700 border-orange-200",
+  meeting: "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200",
+  personal: "bg-green-100 text-green-700 border-green-200 hover:bg-green-200",
+  work: "bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200",
+  reminder: "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200",
 };
 
-const eventTypeDotColors: Record<EventType, string> = {
-  meeting: "bg-blue-500",
-  personal: "bg-green-500",
-  work: "bg-purple-500",
-  reminder: "bg-orange-500",
-};
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export default function EventsListPage() {
   const { events } = useEvents();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(monthStart);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
+  // Scroll to 8 AM on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      const eightAM = 8 * 60; // 8 AM in minutes (assuming 60px per hour)
+      // If using 80px per hour, it would be 8 * 80
+      // Let's wait for render
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ top: 8 * 80, behavior: 'smooth' });
+      }, 100);
+    }
+  }, []);
 
-  const calendarDays = eachDayOfInterval({
-    start: calendarStart,
-    end: calendarEnd,
-  });
+  const nextDay = () => setCurrentDate(addDays(currentDate, 1));
+  const prevDay = () => setCurrentDate(subDays(currentDate, 1));
+  const jumpToToday = () => setCurrentDate(new Date());
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  const dayEvents = events.filter(event => isSameDay(event.date, currentDate));
 
-  const getEventsForDay = (date: Date) => {
-    return events.filter(event => isSameDay(event.date, date))
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  // Helper to calculate position and height
+  const getEventStyle = (event: CalendarEvent) => {
+    const [startHour, startMin] = event.startTime.split(':').map(Number);
+    const [endHour, endMin] = event.endTime.split(':').map(Number);
+
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const duration = endMinutes - startMinutes;
+
+    return {
+      top: `${(startMinutes / 60) * 80}px`, // 80px per hour height
+      height: `${(duration / 60) * 80}px`,
+      minHeight: '40px'
+    };
   };
 
   return (
     <div className="min-h-screen bg-background/50 p-4 md:p-8 font-sans flex justify-center">
-      <div className="w-full max-w-6xl flex flex-col gap-6">
+      <div className="w-full max-w-5xl flex flex-col gap-6 h-[90vh]">
         
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50 gap-4"
         >
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -85,122 +93,130 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-display font-bold text-gray-900">Full Calendar</h1>
-              <p className="text-muted-foreground text-sm">View all your activities at a glance</p>
+              <h1 className="text-2xl font-display font-bold text-gray-900">Daily Schedule</h1>
+              <p className="text-muted-foreground text-sm">Detailed timeline view</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2 bg-white/50 rounded-full p-1 border border-border/60">
-            <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-full h-8 w-8">
+          <div className="flex items-center gap-3 bg-white/50 rounded-full p-1.5 border border-border/60 self-center sm:self-auto">
+            <Button variant="ghost" size="icon" onClick={prevDay} className="rounded-full h-9 w-9">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-semibold min-w-[120px] text-center">
-              {format(currentMonth, 'MMMM yyyy')}
-            </span>
-            <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-full h-8 w-8">
+            <div className="flex flex-col items-center min-w-[140px]">
+              <span className="font-bold text-gray-900 text-sm">
+                {format(currentDate, 'EEEE')}
+              </span>
+              <span className="text-xs text-muted-foreground font-medium">
+                {format(currentDate, 'MMMM do, yyyy')}
+              </span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={nextDay} className="rounded-full h-9 w-9">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          <Button 
+            variant={isToday(currentDate) ? "default" : "outline"} 
+            onClick={jumpToToday}
+            className="rounded-xl hidden sm:flex"
+          >
+            Today
+          </Button>
         </motion.div>
 
-        {/* Calendar Grid */}
+        {/* Daily Timeline */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden flex flex-col flex-1"
+          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden flex flex-col flex-1 relative"
         >
-          {/* Days Header */}
-          <div className="grid grid-cols-7 border-b border-border/40 bg-white/40">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="py-4 text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                {day}
-              </div>
-            ))}
+          {/* Header with current day indicator if needed */}
+          <div className="h-14 border-b border-border/40 bg-white/40 flex items-center px-6 sticky top-0 z-10">
+             <div className="w-16 text-xs font-medium text-muted-foreground uppercase tracking-wider">Time</div>
+             <div className="flex-1 pl-4 border-l border-border/40 h-full flex items-center">
+               <span className="text-sm font-semibold text-gray-600">Events</span>
+             </div>
           </div>
-          
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 grid-rows-5 sm:grid-rows-6 flex-1 min-h-[600px]">
-            {calendarDays.map((day, dayIdx) => {
-              const dayEvents = getEventsForDay(day);
-              const isSelectedMonth = isSameMonth(day, monthStart);
-              const isTodayDate = isToday(day);
 
-              return (
+          {/* Scrollable Timeline Area */}
+          <ScrollArea className="flex-1 relative bg-white/20" ref={scrollRef}>
+            <div className="relative min-h-[1920px]" style={{ height: '1920px' }}> {/* 24h * 80px */}
+              
+              {/* Background Grid Lines */}
+              {HOURS.map((hour) => (
                 <div 
-                  key={day.toString()}
-                  className={cn(
-                    "min-h-[120px] border-b border-r border-border/40 p-2 transition-colors hover:bg-white/60 flex flex-col gap-1",
-                    !isSelectedMonth && "bg-muted/20 text-muted-foreground/50",
-                    dayIdx % 7 === 6 && "border-r-0" // Remove right border for last column
-                  )}
+                  key={hour} 
+                  className="absolute w-full border-b border-border/30 flex items-start group hover:bg-white/30 transition-colors"
+                  style={{ top: `${hour * 80}px`, height: '80px' }}
                 >
-                  <div className="flex justify-between items-start">
-                    <span className={cn(
-                      "text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full",
-                      isTodayDate ? "bg-primary text-white" : "text-muted-foreground"
-                    )}>
-                      {format(day, 'd')}
+                  <div className="w-16 text-right pr-4 -mt-2.5">
+                    <span className="text-xs font-medium text-muted-foreground/70 group-hover:text-primary transition-colors">
+                      {format(setHours(new Date(), hour), 'h a')}
                     </span>
-                    {dayEvents.length > 0 && (
-                      <span className="text-[10px] font-bold text-muted-foreground/70 bg-white/50 px-1.5 py-0.5 rounded-full">
-                        {dayEvents.length}
-                      </span>
-                    )}
                   </div>
-                  
-                  <div className="flex flex-col gap-1 mt-1 overflow-y-auto custom-scrollbar max-h-[100px]">
-                    {dayEvents.map(event => (
-                      <Popover key={event.id}>
-                        <PopoverTrigger asChild>
-                          <button className={cn(
-                            "text-left text-xs px-2 py-1 rounded-md truncate border w-full transition-all hover:scale-[1.02] hover:shadow-sm",
-                            eventTypeColors[event.type]
-                          )}>
-                            <span className="font-semibold mr-1">{event.startTime}</span>
-                            {event.title}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 p-0 rounded-2xl overflow-hidden border-border/50 shadow-xl backdrop-blur-xl bg-white/90">
-                          <div className={cn("h-2 w-full", eventTypeDotColors[event.type].replace("bg-", "bg-opacity-50 bg-"))} />
-                          <div className="p-5">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-lg">{event.title}</h3>
-                              <Badge variant="outline" className={cn("capitalize", eventTypeColors[event.type])}>
-                                {event.type}
-                              </Badge>
-                            </div>
-                            
-                            <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                               <div className="flex items-center gap-2">
-                                 <Clock className="h-4 w-4 text-primary" />
-                                 <span>{format(event.date, 'EEEE, MMMM do')}</span>
-                               </div>
-                               <div className="flex items-center gap-2 pl-6 text-xs">
-                                 <span>{event.startTime} - {event.endTime}</span>
-                               </div>
-                               {event.location && (
-                                 <div className="flex items-center gap-2">
-                                   <MapPin className="h-4 w-4 text-primary" />
-                                   <span>{event.location}</span>
-                                 </div>
-                               )}
-                            </div>
-                            
-                            {event.description && (
-                              <div className="bg-muted/30 p-3 rounded-xl text-sm text-foreground/80">
-                                {event.description}
-                              </div>
-                            )}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    ))}
+                  <div className="flex-1 border-l border-border/40 h-full relative">
+                    {/* Half-hour marker */}
+                    <div className="absolute top-1/2 left-0 w-full border-b border-border/20 border-dashed" />
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+
+              {/* Current Time Indicator (if today) */}
+              {isToday(currentDate) && (
+                <div 
+                  className="absolute left-16 right-0 border-t-2 border-red-500 z-20 flex items-center pointer-events-none"
+                  style={{ top: `${(getHours(new Date()) * 60 + getMinutes(new Date())) / 60 * 80}px` }}
+                >
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-500 -ml-1.5" />
+                </div>
+              )}
+
+              {/* Events */}
+              <div className="absolute top-0 left-16 right-4 bottom-0">
+                {dayEvents.map((event) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={cn(
+                      "absolute left-2 right-2 rounded-xl border shadow-sm p-3 flex flex-col justify-center transition-all hover:z-10 hover:shadow-md cursor-pointer overflow-hidden",
+                      eventTypeColors[event.type]
+                    )}
+                    style={getEventStyle(event)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-sm leading-tight line-clamp-1">{event.title}</h3>
+                      {/* Only show badge if height allows */}
+                      {parseInt(getEventStyle(event).height) > 60 && (
+                        <Badge variant="secondary" className="bg-white/50 border-0 text-[10px] h-5 px-1.5">
+                          {event.type}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-3 mt-1 text-xs opacity-80 font-medium">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {event.startTime} - {event.endTime}
+                      </span>
+                      {event.location && parseInt(getEventStyle(event).height) > 60 && (
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3" />
+                          {event.location}
+                        </span>
+                      )}
+                    </div>
+
+                    {event.description && parseInt(getEventStyle(event).height) > 80 && (
+                      <p className="text-xs mt-2 opacity-70 line-clamp-2">{event.description}</p>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+
+            </div>
+          </ScrollArea>
         </motion.div>
       </div>
     </div>
