@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { DayPicker, DayClickEventHandler } from "react-day-picker";
 import "react-day-picker/style.css";
 import { format, isSameDay, startOfToday } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -35,7 +36,11 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useEvents, CalendarEvent, EventType } from "@/lib/events-context";
+import { getAllEvents, createEvent } from "@/lib/api";
+import type { InsertEvent } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+
+type EventType = "meeting" | "personal" | "work" | "reminder";
 
 const eventTypeColors: Record<EventType, string> = {
   meeting: "bg-blue-100 text-blue-700 border-blue-200",
@@ -45,11 +50,35 @@ const eventTypeColors: Record<EventType, string> = {
 };
 
 export default function CalendarPage() {
-  const { events, addEvent } = useEvents();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(startOfToday());
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["events"],
+    queryFn: getAllEvents,
+  });
+
+  const createEventMutation = useMutation({
+    mutationFn: createEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setIsAddEventOpen(false);
+      toast({
+        title: "Event created",
+        description: "Your event has been added to the calendar.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   
-  // Filter events for the selected day
   const dayEvents = events.filter(event => 
     selectedDate && isSameDay(event.date, selectedDate)
   ).sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -61,20 +90,18 @@ export default function CalendarPage() {
   const handleAddEvent = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newEvent: CalendarEvent = {
-      id: Math.random().toString(36).substr(2, 9),
+    
+    const newEvent: InsertEvent = {
       title: formData.get("title") as string,
       date: selectedDate || new Date(),
       startTime: formData.get("startTime") as string || "09:00",
       endTime: formData.get("endTime") as string || "10:00",
       type: formData.get("type") as EventType || "work",
-      location: formData.get("location") as string,
-      description: formData.get("description") as string,
-      createdAt: new Date(),
+      location: (formData.get("location") as string) || undefined,
+      description: (formData.get("description") as string) || undefined,
     };
     
-    addEvent(newEvent);
-    setIsAddEventOpen(false);
+    createEventMutation.mutate(newEvent);
   };
 
   return (
@@ -103,6 +130,7 @@ export default function CalendarPage() {
               <Button 
                 onClick={() => setIsAddEventOpen(true)}
                 className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 rounded-xl py-6 text-base transition-all hover:scale-[1.02]"
+                data-testid="button-add-event"
               >
                 <Plus className="mr-2 h-5 w-5" /> Add Event
               </Button>
@@ -111,6 +139,7 @@ export default function CalendarPage() {
                 <Button 
                   variant="outline"
                   className="w-full h-full border-2 border-primary/10 hover:bg-primary/5 hover:border-primary/20 text-primary rounded-xl py-6 text-base transition-all"
+                  data-testid="link-view-log"
                 >
                   <List className="mr-2 h-5 w-5" /> View Log
                 </Button>
@@ -163,8 +192,8 @@ export default function CalendarPage() {
               <h2 className="text-3xl font-display font-bold text-gray-800">
                 {selectedDate ? format(selectedDate, 'EEEE, MMMM do') : 'Select a date'}
               </h2>
-              <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                {dayEvents.length} events scheduled
+              <p className="text-muted-foreground mt-1 flex items-center gap-2" data-testid="text-event-count">
+                {isLoading ? "Loading..." : `${dayEvents.length} events scheduled`}
               </p>
             </div>
             <div className="flex gap-3">
@@ -192,25 +221,26 @@ export default function CalendarPage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ delay: index * 0.05 }}
                     className="group mb-4 relative"
+                    data-testid={`card-event-${event.id}`}
                   >
                     <div className="flex gap-6">
                       {/* Time Column */}
                       <div className="w-16 pt-3 text-right">
-                        <span className="text-sm font-medium text-gray-900 block">{event.startTime}</span>
-                        <span className="text-xs text-muted-foreground block">{event.endTime}</span>
+                        <span className="text-sm font-medium text-gray-900 block" data-testid={`text-start-time-${event.id}`}>{event.startTime}</span>
+                        <span className="text-xs text-muted-foreground block" data-testid={`text-end-time-${event.id}`}>{event.endTime}</span>
                       </div>
 
                       {/* Event Card */}
                       <div className={cn(
                         "flex-1 p-5 rounded-2xl border transition-all duration-300 hover:shadow-md cursor-pointer relative overflow-hidden",
-                        eventTypeColors[event.type]
+                        eventTypeColors[event.type as EventType]
                       )}>
                         {/* Decor bar */}
                         <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", event.type === 'work' ? 'bg-purple-400' : event.type === 'personal' ? 'bg-green-400' : event.type === 'meeting' ? 'bg-blue-400' : 'bg-orange-400')} />
                         
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-bold text-lg mb-1">{event.title}</h3>
+                            <h3 className="font-bold text-lg mb-1" data-testid={`text-title-${event.id}`}>{event.title}</h3>
                             {event.description && <p className="text-sm opacity-80 mb-2 line-clamp-1">{event.description}</p>}
                             
                             <div className="flex items-center gap-4 text-xs font-medium opacity-70 mt-3">
@@ -225,7 +255,7 @@ export default function CalendarPage() {
                             </div>
                           </div>
                           
-                          <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-0 text-current capitalize shadow-sm">
+                          <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-0 text-current capitalize shadow-sm" data-testid={`badge-type-${event.id}`}>
                             {event.type}
                           </Badge>
                         </div>
@@ -273,6 +303,7 @@ export default function CalendarPage() {
                 name="title" 
                 placeholder="e.g., Team Brainstorming" 
                 className="rounded-xl border-border/50 bg-white/50 focus:bg-white transition-all"
+                data-testid="input-title"
                 required 
               />
             </div>
@@ -285,7 +316,8 @@ export default function CalendarPage() {
                   name="startTime" 
                   type="time" 
                   defaultValue="09:00"
-                  className="rounded-xl border-border/50 bg-white/50" 
+                  className="rounded-xl border-border/50 bg-white/50"
+                  data-testid="input-start-time"
                 />
               </div>
               <div className="space-y-2">
@@ -295,7 +327,8 @@ export default function CalendarPage() {
                   name="endTime" 
                   type="time" 
                   defaultValue="10:00"
-                  className="rounded-xl border-border/50 bg-white/50" 
+                  className="rounded-xl border-border/50 bg-white/50"
+                  data-testid="input-end-time"
                 />
               </div>
             </div>
@@ -303,7 +336,7 @@ export default function CalendarPage() {
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
               <Select name="type" defaultValue="work">
-                <SelectTrigger className="rounded-xl border-border/50 bg-white/50">
+                <SelectTrigger className="rounded-xl border-border/50 bg-white/50" data-testid="select-type">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -321,7 +354,8 @@ export default function CalendarPage() {
                 id="location" 
                 name="location" 
                 placeholder="e.g., Zoom or Office" 
-                className="rounded-xl border-border/50 bg-white/50" 
+                className="rounded-xl border-border/50 bg-white/50"
+                data-testid="input-location"
               />
             </div>
             
@@ -331,15 +365,23 @@ export default function CalendarPage() {
                 id="description" 
                 name="description" 
                 placeholder="Add details..." 
-                className="rounded-xl border-border/50 bg-white/50 resize-none min-h-[80px]" 
+                className="rounded-xl border-border/50 bg-white/50 resize-none min-h-[80px]"
+                data-testid="input-description"
               />
             </div>
 
             <DialogFooter className="pt-4">
               <DialogClose asChild>
-                <Button type="button" variant="ghost" className="rounded-xl">Cancel</Button>
+                <Button type="button" variant="ghost" className="rounded-xl" data-testid="button-cancel">Cancel</Button>
               </DialogClose>
-              <Button type="submit" className="rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">Create Event</Button>
+              <Button 
+                type="submit" 
+                className="rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                disabled={createEventMutation.isPending}
+                data-testid="button-create-event"
+              >
+                {createEventMutation.isPending ? "Creating..." : "Create Event"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

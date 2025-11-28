@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import CalendarPage from "@/pages/CalendarPage";
 import EventsListPage from "@/pages/EventsListPage";
-import { EventsProvider } from "@/lib/events-context";
 
 function Router() {
   return (
@@ -23,9 +22,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <EventsProvider>
-          <Router />
-        </EventsProvider>
+        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );

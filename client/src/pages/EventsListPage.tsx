@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   format, 
   addDays, 
   subDays, 
   isToday, 
   isSameDay,
-  parse,
-  compareAsc
 } from "date-fns";
 import { 
   ArrowLeft, 
@@ -16,15 +15,15 @@ import {
   Clock, 
   MapPin,
   Calendar as CalendarIcon,
-  MoreVertical,
-  Circle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEvents, EventType, CalendarEvent } from "@/lib/events-context";
 import { cn } from "@/lib/utils";
+import { getAllEvents } from "@/lib/api";
+
+type EventType = "meeting" | "personal" | "work" | "reminder";
 
 const eventTypeColors: Record<EventType, string> = {
   meeting: "bg-blue-100 text-blue-700 border-blue-200",
@@ -41,8 +40,12 @@ const eventTypeBorderColors: Record<EventType, string> = {
 };
 
 export default function EventsListPage() {
-  const { events } = useEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["events"],
+    queryFn: getAllEvents,
+  });
 
   const nextDay = () => setCurrentDate(addDays(currentDate, 1));
   const prevDay = () => setCurrentDate(subDays(currentDate, 1));
@@ -64,7 +67,7 @@ export default function EventsListPage() {
         >
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
@@ -75,7 +78,7 @@ export default function EventsListPage() {
           </div>
           
           <div className="flex items-center gap-3 bg-white/50 rounded-full p-1.5 border border-border/60 self-center sm:self-auto">
-            <Button variant="ghost" size="icon" onClick={prevDay} className="rounded-full h-9 w-9">
+            <Button variant="ghost" size="icon" onClick={prevDay} className="rounded-full h-9 w-9" data-testid="button-prev-day">
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex flex-col items-center min-w-[140px]">
@@ -86,7 +89,7 @@ export default function EventsListPage() {
                 {format(currentDate, 'MMMM do, yyyy')}
               </span>
             </div>
-            <Button variant="ghost" size="icon" onClick={nextDay} className="rounded-full h-9 w-9">
+            <Button variant="ghost" size="icon" onClick={nextDay} className="rounded-full h-9 w-9" data-testid="button-next-day">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -95,6 +98,7 @@ export default function EventsListPage() {
             variant={isToday(currentDate) ? "default" : "outline"} 
             onClick={jumpToToday}
             className="rounded-xl hidden sm:flex"
+            data-testid="button-today"
           >
             Today
           </Button>
@@ -127,7 +131,9 @@ export default function EventsListPage() {
               )}
 
               <AnimatePresence mode="popLayout">
-                {dayEvents.length > 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-12 text-muted-foreground">Loading...</div>
+                ) : dayEvents.length > 0 ? (
                   dayEvents.map((event, index) => (
                     <motion.div
                       key={event.id}
@@ -136,6 +142,7 @@ export default function EventsListPage() {
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ delay: index * 0.05 }}
                       className="group mb-6 relative flex flex-col sm:flex-row gap-4 sm:gap-8"
+                      data-testid={`event-item-${event.id}`}
                     >
                       {/* Time Column */}
                       <div className="w-full sm:w-16 pt-1 text-left sm:text-right flex-shrink-0 flex sm:block justify-between items-center">
@@ -149,16 +156,16 @@ export default function EventsListPage() {
 
                       {/* Timeline Dot */}
                       <div className="absolute left-[4.5rem] top-1.5 -ml-[5px] hidden sm:flex h-2.5 w-2.5 rounded-full border-2 border-white ring-1 ring-border bg-muted z-10 items-center justify-center">
-                         <div className={cn("h-1.5 w-1.5 rounded-full", eventTypeColors[event.type].replace('bg-', 'bg-opacity-100 bg-').split(' ')[0])} />
+                         <div className={cn("h-1.5 w-1.5 rounded-full", eventTypeColors[event.type as EventType].replace('bg-', 'bg-opacity-100 bg-').split(' ')[0])} />
                       </div>
 
                       {/* Event Card */}
                       <div className={cn(
                         "flex-1 p-5 rounded-2xl border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden bg-white",
-                        eventTypeColors[event.type]
+                        eventTypeColors[event.type as EventType]
                       )}>
                         {/* Left accent border */}
-                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", eventTypeBorderColors[event.type].replace('border-', 'bg-'))} />
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", eventTypeBorderColors[event.type as EventType].replace('border-', 'bg-'))} />
                         
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1 min-w-0">
