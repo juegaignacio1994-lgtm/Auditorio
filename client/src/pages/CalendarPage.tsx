@@ -1,17 +1,17 @@
 import React, { useState } from "react";
+import { Link } from "wouter";
 import { DayPicker, DayClickEventHandler } from "react-day-picker";
 import "react-day-picker/style.css";
-import { format, isSameDay, addDays, startOfToday } from "date-fns";
+import { format, isSameDay, startOfToday } from "date-fns";
 import { 
   Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
   Plus, 
   Clock, 
   MapPin, 
   MoreHorizontal,
   Bell,
-  Search
+  Search,
+  List
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
@@ -36,59 +35,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-// --- Mock Data & Types ---
-
-type EventType = "meeting" | "personal" | "work" | "reminder";
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: Date;
-  startTime: string;
-  endTime: string;
-  type: EventType;
-  description?: string;
-  location?: string;
-}
-
-const initialEvents: CalendarEvent[] = [
-  {
-    id: "1",
-    title: "Design Review",
-    date: startOfToday(),
-    startTime: "10:00",
-    endTime: "11:30",
-    type: "work",
-    location: "Conference Room A"
-  },
-  {
-    id: "2",
-    title: "Lunch with Sarah",
-    date: startOfToday(),
-    startTime: "12:30",
-    endTime: "13:30",
-    type: "personal",
-    location: "The Green Bowl"
-  },
-  {
-    id: "3",
-    title: "Project Kickoff",
-    date: addDays(startOfToday(), 2),
-    startTime: "14:00",
-    endTime: "15:00",
-    type: "work",
-    description: "Discussing Q4 roadmap"
-  },
-  {
-    id: "4",
-    title: "Dentist Appointment",
-    date: addDays(startOfToday(), 5),
-    startTime: "09:00",
-    endTime: "10:00",
-    type: "reminder",
-  }
-];
+import { useEvents, CalendarEvent, EventType } from "@/lib/events-context";
 
 const eventTypeColors: Record<EventType, string> = {
   meeting: "bg-blue-100 text-blue-700 border-blue-200",
@@ -97,11 +44,9 @@ const eventTypeColors: Record<EventType, string> = {
   reminder: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-// --- Components ---
-
 export default function CalendarPage() {
+  const { events, addEvent } = useEvents();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(startOfToday());
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   
   // Filter events for the selected day
@@ -125,9 +70,10 @@ export default function CalendarPage() {
       type: formData.get("type") as EventType || "work",
       location: formData.get("location") as string,
       description: formData.get("description") as string,
+      createdAt: new Date(),
     };
     
-    setEvents([...events, newEvent]);
+    addEvent(newEvent);
     setIsAddEventOpen(false);
   };
 
@@ -153,12 +99,23 @@ export default function CalendarPage() {
               </div>
             </div>
             
-            <Button 
-              onClick={() => setIsAddEventOpen(true)}
-              className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 rounded-xl py-6 text-base transition-all hover:scale-[1.02]"
-            >
-              <Plus className="mr-2 h-5 w-5" /> Add New Event
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                onClick={() => setIsAddEventOpen(true)}
+                className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 rounded-xl py-6 text-base transition-all hover:scale-[1.02]"
+              >
+                <Plus className="mr-2 h-5 w-5" /> Add Event
+              </Button>
+              
+              <Link href="/events">
+                <Button 
+                  variant="outline"
+                  className="w-full h-full border-2 border-primary/10 hover:bg-primary/5 hover:border-primary/20 text-primary rounded-xl py-6 text-base transition-all"
+                >
+                  <List className="mr-2 h-5 w-5" /> View Log
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Date Picker Card */}
