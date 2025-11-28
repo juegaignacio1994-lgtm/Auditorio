@@ -1,17 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Link } from "wouter";
 import { 
   format, 
   addDays, 
   subDays, 
   isToday, 
-  startOfDay, 
   isSameDay,
-  differenceInMinutes,
-  setHours,
-  setMinutes,
-  getHours,
-  getMinutes
+  parse,
+  compareAsc
 } from "date-fns";
 import { 
   ArrowLeft, 
@@ -19,9 +15,11 @@ import {
   ChevronRight, 
   Clock, 
   MapPin,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  MoreVertical,
+  Circle
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,56 +27,34 @@ import { useEvents, EventType, CalendarEvent } from "@/lib/events-context";
 import { cn } from "@/lib/utils";
 
 const eventTypeColors: Record<EventType, string> = {
-  meeting: "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200",
-  personal: "bg-green-100 text-green-700 border-green-200 hover:bg-green-200",
-  work: "bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200",
-  reminder: "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200",
+  meeting: "bg-blue-100 text-blue-700 border-blue-200",
+  personal: "bg-green-100 text-green-700 border-green-200",
+  work: "bg-purple-100 text-purple-700 border-purple-200",
+  reminder: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const eventTypeBorderColors: Record<EventType, string> = {
+  meeting: "border-blue-500",
+  personal: "border-green-500",
+  work: "border-purple-500",
+  reminder: "border-orange-500",
+};
 
 export default function EventsListPage() {
   const { events } = useEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to 8 AM on mount
-  useEffect(() => {
-    if (scrollRef.current) {
-      const eightAM = 8 * 60; // 8 AM in minutes (assuming 60px per hour)
-      // If using 80px per hour, it would be 8 * 80
-      // Let's wait for render
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({ top: 8 * 80, behavior: 'smooth' });
-      }, 100);
-    }
-  }, []);
 
   const nextDay = () => setCurrentDate(addDays(currentDate, 1));
   const prevDay = () => setCurrentDate(subDays(currentDate, 1));
   const jumpToToday = () => setCurrentDate(new Date());
 
-  const dayEvents = events.filter(event => isSameDay(event.date, currentDate));
-
-  // Helper to calculate position and height
-  const getEventStyle = (event: CalendarEvent) => {
-    const [startHour, startMin] = event.startTime.split(':').map(Number);
-    const [endHour, endMin] = event.endTime.split(':').map(Number);
-
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    const duration = endMinutes - startMinutes;
-
-    return {
-      top: `${(startMinutes / 60) * 80}px`, // 80px per hour height
-      height: `${(duration / 60) * 80}px`,
-      minHeight: '40px'
-    };
-  };
+  const dayEvents = events
+    .filter(event => isSameDay(event.date, currentDate))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
     <div className="min-h-screen bg-background/50 p-4 md:p-8 font-sans flex justify-center">
-      <div className="w-full max-w-5xl flex flex-col gap-6 h-[90vh]">
+      <div className="w-full max-w-3xl flex flex-col gap-6">
         
         {/* Header */}
         <motion.div 
@@ -93,8 +69,8 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-display font-bold text-gray-900">Daily Schedule</h1>
-              <p className="text-muted-foreground text-sm">Detailed timeline view</p>
+              <h1 className="text-2xl font-display font-bold text-gray-900">Daily Agenda</h1>
+              <p className="text-muted-foreground text-sm">Scheduled activities only</p>
             </div>
           </div>
           
@@ -124,97 +100,112 @@ export default function EventsListPage() {
           </Button>
         </motion.div>
 
-        {/* Daily Timeline */}
+        {/* Agenda List */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden flex flex-col flex-1 relative"
+          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden min-h-[500px] flex flex-col"
         >
-          {/* Header with current day indicator if needed */}
-          <div className="h-14 border-b border-border/40 bg-white/40 flex items-center px-6 sticky top-0 z-10">
-             <div className="w-16 text-xs font-medium text-muted-foreground uppercase tracking-wider">Time</div>
-             <div className="flex-1 pl-4 border-l border-border/40 h-full flex items-center">
-               <span className="text-sm font-semibold text-gray-600">Events</span>
-             </div>
+          <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center">
+             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+               <CalendarIcon className="h-5 w-5 text-primary" />
+               Activities ({dayEvents.length})
+             </h2>
+             {dayEvents.length > 0 && (
+               <span className="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                 {dayEvents[0].startTime} - {dayEvents[dayEvents.length - 1].endTime}
+               </span>
+             )}
           </div>
 
-          {/* Scrollable Timeline Area */}
-          <ScrollArea className="flex-1 relative bg-white/20" ref={scrollRef}>
-            <div className="relative min-h-[1920px]" style={{ height: '1920px' }}> {/* 24h * 80px */}
-              
-              {/* Background Grid Lines */}
-              {HOURS.map((hour) => (
-                <div 
-                  key={hour} 
-                  className="absolute w-full border-b border-border/30 flex items-start group hover:bg-white/30 transition-colors"
-                  style={{ top: `${hour * 80}px`, height: '80px' }}
-                >
-                  <div className="w-16 text-right pr-4 -mt-2.5">
-                    <span className="text-xs font-medium text-muted-foreground/70 group-hover:text-primary transition-colors">
-                      {format(setHours(new Date(), hour), 'h a')}
-                    </span>
-                  </div>
-                  <div className="flex-1 border-l border-border/40 h-full relative">
-                    {/* Half-hour marker */}
-                    <div className="absolute top-1/2 left-0 w-full border-b border-border/20 border-dashed" />
-                  </div>
-                </div>
-              ))}
-
-              {/* Current Time Indicator (if today) */}
-              {isToday(currentDate) && (
-                <div 
-                  className="absolute left-16 right-0 border-t-2 border-red-500 z-20 flex items-center pointer-events-none"
-                  style={{ top: `${(getHours(new Date()) * 60 + getMinutes(new Date())) / 60 * 80}px` }}
-                >
-                  <div className="h-2.5 w-2.5 rounded-full bg-red-500 -ml-1.5" />
-                </div>
+          <ScrollArea className="flex-1 p-6">
+            <div className="relative">
+              {/* Vertical Timeline Line */}
+              {dayEvents.length > 0 && (
+                <div className="absolute left-[4.5rem] top-4 bottom-4 w-px bg-border/60 hidden sm:block" />
               )}
 
-              {/* Events */}
-              <div className="absolute top-0 left-16 right-4 bottom-0">
-                {dayEvents.map((event) => (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className={cn(
-                      "absolute left-2 right-2 rounded-xl border shadow-sm p-3 flex flex-col justify-center transition-all hover:z-10 hover:shadow-md cursor-pointer overflow-hidden",
-                      eventTypeColors[event.type]
-                    )}
-                    style={getEventStyle(event)}
+              <AnimatePresence mode="popLayout">
+                {dayEvents.length > 0 ? (
+                  dayEvents.map((event, index) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="group mb-6 relative flex flex-col sm:flex-row gap-4 sm:gap-8"
+                    >
+                      {/* Time Column */}
+                      <div className="w-full sm:w-16 pt-1 text-left sm:text-right flex-shrink-0 flex sm:block justify-between items-center">
+                        <div>
+                          <span className="text-sm font-bold text-gray-900 block">{event.startTime}</span>
+                          <span className="text-xs text-muted-foreground block opacity-60">{event.endTime}</span>
+                        </div>
+                        {/* Mobile line connector */}
+                        <div className="h-px flex-1 bg-border/50 mx-4 sm:hidden" />
+                      </div>
+
+                      {/* Timeline Dot */}
+                      <div className="absolute left-[4.5rem] top-1.5 -ml-[5px] hidden sm:flex h-2.5 w-2.5 rounded-full border-2 border-white ring-1 ring-border bg-muted z-10 items-center justify-center">
+                         <div className={cn("h-1.5 w-1.5 rounded-full", eventTypeColors[event.type].replace('bg-', 'bg-opacity-100 bg-').split(' ')[0])} />
+                      </div>
+
+                      {/* Event Card */}
+                      <div className={cn(
+                        "flex-1 p-5 rounded-2xl border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden bg-white",
+                        eventTypeColors[event.type]
+                      )}>
+                        {/* Left accent border */}
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", eventTypeBorderColors[event.type].replace('border-', 'bg-'))} />
+                        
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-lg mb-1 text-gray-900">{event.title}</h3>
+                            
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm opacity-80 font-medium mb-3">
+                               {event.location && (
+                                 <span className="flex items-center gap-1.5">
+                                   <MapPin className="h-3.5 w-3.5" /> {event.location}
+                                 </span>
+                               )}
+                               <span className="flex items-center gap-1.5">
+                                  <Clock className="h-3.5 w-3.5" /> {event.startTime} - {event.endTime}
+                               </span>
+                            </div>
+
+                            {event.description && (
+                              <p className="text-sm opacity-70 leading-relaxed">{event.description}</p>
+                            )}
+                          </div>
+                          
+                          <Badge variant="secondary" className="bg-white/60 backdrop-blur-sm border-0 text-current capitalize shadow-sm flex-shrink-0">
+                            {event.type}
+                          </Badge>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="h-[400px] flex flex-col items-center justify-center text-center text-muted-foreground"
                   >
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-sm leading-tight line-clamp-1">{event.title}</h3>
-                      {/* Only show badge if height allows */}
-                      {parseInt(getEventStyle(event).height) > 60 && (
-                        <Badge variant="secondary" className="bg-white/50 border-0 text-[10px] h-5 px-1.5">
-                          {event.type}
-                        </Badge>
-                      )}
+                    <div className="h-24 w-24 bg-muted/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                      <CalendarIcon className="h-10 w-10 opacity-30" />
                     </div>
-                    
-                    <div className="flex items-center gap-3 mt-1 text-xs opacity-80 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {event.startTime} - {event.endTime}
-                      </span>
-                      {event.location && parseInt(getEventStyle(event).height) > 60 && (
-                        <span className="flex items-center gap-1 truncate">
-                          <MapPin className="h-3 w-3" />
-                          {event.location}
-                        </span>
-                      )}
-                    </div>
-
-                    {event.description && parseInt(getEventStyle(event).height) > 80 && (
-                      <p className="text-xs mt-2 opacity-70 line-clamp-2">{event.description}</p>
-                    )}
+                    <h3 className="text-xl font-medium text-foreground/80 mb-2">No activities scheduled</h3>
+                    <p className="text-base max-w-xs mx-auto mb-6 opacity-70">Your day is completely clear. Time to relax or plan something new!</p>
+                    <Link href="/">
+                       <Button className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+                          Go to Calendar to Add Events
+                       </Button>
+                    </Link>
                   </motion.div>
-                ))}
-              </div>
-
+                )}
+              </AnimatePresence>
             </div>
           </ScrollArea>
         </motion.div>
