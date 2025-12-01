@@ -201,7 +201,6 @@ export default function EventsListPage() {
                       <CalendarIcon className="h-10 w-10 opacity-30" />
                     </div>
                     <h3 className="text-xl font-medium text-foreground/80 mb-2">No hay actividades programadas</h3>
-                    <p className="text-base max-w-xs mx-auto mb-6 opacity-70">Tu día está completamente libre. ¡Es hora de relajarse o planificar algo nuevo!</p>
                   </motion.div>
                 )}
               </AnimatePresence>
