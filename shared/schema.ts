@@ -34,7 +34,7 @@ export const insertEventSchema = createInsertSchema(events, {
   date: z.coerce.date(),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-  type: z.enum(["meeting", "personal", "work", "reminder"]),
+  type: z.enum(["interno", "externo"]),
   description: z.string().optional(),
   location: z.string().optional(),
 }).omit({ id: true, createdAt: true });
