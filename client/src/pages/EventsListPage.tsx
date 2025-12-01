@@ -69,7 +69,7 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-display font-bold text-gray-900">Agenda Diaria</h1>
+              <h1 className="text-2xl font-display font-bold text-gray-900">Actividades auditorio INACAP</h1>
               <p className="text-muted-foreground text-sm">Solo actividades programadas</p>
             </div>
           </div>
