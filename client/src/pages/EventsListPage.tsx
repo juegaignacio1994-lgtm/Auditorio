@@ -72,8 +72,8 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-display font-bold text-gray-900">Daily Agenda</h1>
-              <p className="text-muted-foreground text-sm">Scheduled activities only</p>
+              <h1 className="text-2xl font-display font-bold text-gray-900">Agenda Diaria</h1>
+              <p className="text-muted-foreground text-sm">Solo actividades programadas</p>
             </div>
           </div>
           
@@ -100,7 +100,7 @@ export default function EventsListPage() {
             className="rounded-xl hidden sm:flex"
             data-testid="button-today"
           >
-            Today
+            Hoy
           </Button>
         </motion.div>
 
@@ -114,7 +114,7 @@ export default function EventsListPage() {
           <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center">
              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                <CalendarIcon className="h-5 w-5 text-primary" />
-               Activities ({dayEvents.length})
+               Actividades ({dayEvents.length})
              </h2>
              {dayEvents.length > 0 && (
                <span className="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
@@ -132,7 +132,7 @@ export default function EventsListPage() {
 
               <AnimatePresence mode="popLayout">
                 {isLoading ? (
-                  <div className="text-center py-12 text-muted-foreground">Loading...</div>
+                  <div className="text-center py-12 text-muted-foreground">Cargando...</div>
                 ) : dayEvents.length > 0 ? (
                   dayEvents.map((event, index) => (
                     <motion.div
@@ -203,11 +203,11 @@ export default function EventsListPage() {
                     <div className="h-24 w-24 bg-muted/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
                       <CalendarIcon className="h-10 w-10 opacity-30" />
                     </div>
-                    <h3 className="text-xl font-medium text-foreground/80 mb-2">No activities scheduled</h3>
-                    <p className="text-base max-w-xs mx-auto mb-6 opacity-70">Your day is completely clear. Time to relax or plan something new!</p>
+                    <h3 className="text-xl font-medium text-foreground/80 mb-2">No hay actividades programadas</h3>
+                    <p className="text-base max-w-xs mx-auto mb-6 opacity-70">Tu día está completamente libre. ¡Es hora de relajarse o planificar algo nuevo!</p>
                     <Link href="/">
                        <Button className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
-                          Go to Calendar to Add Events
+                          Ir al Calendario para Agregar Eventos
                        </Button>
                     </Link>
                   </motion.div>

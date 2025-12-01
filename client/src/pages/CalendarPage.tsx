@@ -66,8 +66,8 @@ export default function CalendarPage() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       setIsAddEventOpen(false);
       toast({
-        title: "Event created",
-        description: "Your event has been added to the calendar.",
+        title: "Evento creado",
+        description: "Tu evento ha sido agregado al calendario.",
       });
     },
     onError: (error: Error) => {
@@ -118,8 +118,8 @@ export default function CalendarPage() {
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-display font-bold text-gray-900">Flow Calendar</h1>
-                <p className="text-muted-foreground text-sm">Manage your time efficiently</p>
+                <h1 className="text-2xl font-display font-bold text-gray-900">Calendario Flow</h1>
+                <p className="text-muted-foreground text-sm">Administra tu tiempo eficientemente</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                 <CalendarIcon size={20} />
@@ -132,7 +132,7 @@ export default function CalendarPage() {
                 className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 rounded-xl py-6 text-base transition-all hover:scale-[1.02]"
                 data-testid="button-add-event"
               >
-                <Plus className="mr-2 h-5 w-5" /> Add Event
+                <Plus className="mr-2 h-5 w-5" /> Agregar Evento
               </Button>
               
               <Link href="/events">
@@ -141,7 +141,7 @@ export default function CalendarPage() {
                   className="w-full h-full border-2 border-primary/10 hover:bg-primary/5 hover:border-primary/20 text-primary rounded-xl py-6 text-base transition-all"
                   data-testid="link-view-log"
                 >
-                  <List className="mr-2 h-5 w-5" /> View Log
+                  <List className="mr-2 h-5 w-5" /> Ver Registro
                 </Button>
               </Link>
             </div>
@@ -190,10 +190,10 @@ export default function CalendarPage() {
           <div className="p-8 border-b border-border/40 flex items-center justify-between bg-white/40">
             <div>
               <h2 className="text-3xl font-display font-bold text-gray-800">
-                {selectedDate ? format(selectedDate, 'EEEE, MMMM do') : 'Select a date'}
+                {selectedDate ? format(selectedDate, 'EEEE, MMMM do') : 'Selecciona una fecha'}
               </h2>
               <p className="text-muted-foreground mt-1 flex items-center gap-2" data-testid="text-event-count">
-                {isLoading ? "Loading..." : `${dayEvents.length} events scheduled`}
+                {isLoading ? "Cargando..." : `${dayEvents.length} eventos programados`}
               </p>
             </div>
             <div className="flex gap-3">
@@ -272,14 +272,14 @@ export default function CalendarPage() {
                   <div className="h-20 w-20 bg-muted/30 rounded-full flex items-center justify-center mb-4">
                     <CalendarIcon className="h-8 w-8 opacity-40" />
                   </div>
-                  <h3 className="text-lg font-medium text-foreground/80">No events planned</h3>
-                  <p className="text-sm max-w-xs mx-auto mt-1">Enjoy your free time or schedule something new.</p>
+                  <h3 className="text-lg font-medium text-foreground/80">No hay eventos planeados</h3>
+                  <p className="text-sm max-w-xs mx-auto mt-1">Disfruta de tu tiempo libre o agenda algo nuevo.</p>
                   <Button 
                     variant="link" 
                     onClick={() => setIsAddEventOpen(true)} 
                     className="mt-4 text-primary font-semibold"
                   >
-                    Schedule an event
+                    Programar un evento
                   </Button>
                 </motion.div>
               )}
@@ -292,16 +292,16 @@ export default function CalendarPage() {
       <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-3xl p-0 overflow-hidden bg-white/95 backdrop-blur-xl">
           <DialogHeader className="px-6 pt-6 pb-4 bg-muted/20 border-b border-border/50">
-            <DialogTitle className="text-xl font-display">Add New Event</DialogTitle>
+            <DialogTitle className="text-xl font-display">Agregar Nuevo Evento</DialogTitle>
           </DialogHeader>
           
           <form onSubmit={handleAddEvent} className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Event Title</Label>
+              <Label htmlFor="title">Título del Evento</Label>
               <Input 
                 id="title" 
                 name="title" 
-                placeholder="e.g., Team Brainstorming" 
+                placeholder="p.ej., Lluvia de ideas del equipo" 
                 className="rounded-xl border-border/50 bg-white/50 focus:bg-white transition-all"
                 data-testid="input-title"
                 required 
@@ -310,7 +310,7 @@ export default function CalendarPage() {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Start Time</Label>
+                <Label htmlFor="startTime">Hora de Inicio</Label>
                 <Input 
                   id="startTime" 
                   name="startTime" 
@@ -321,7 +321,7 @@ export default function CalendarPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endTime">End Time</Label>
+                <Label htmlFor="endTime">Hora de Finalización</Label>
                 <Input 
                   id="endTime" 
                   name="endTime" 
@@ -334,37 +334,37 @@ export default function CalendarPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="type">Tipo</Label>
               <Select name="type" defaultValue="work">
                 <SelectTrigger className="rounded-xl border-border/50 bg-white/50" data-testid="select-type">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="work">Work</SelectItem>
+                  <SelectItem value="work">Trabajo</SelectItem>
                   <SelectItem value="personal">Personal</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
-                  <SelectItem value="reminder">Reminder</SelectItem>
+                  <SelectItem value="meeting">Reunión</SelectItem>
+                  <SelectItem value="reminder">Recordatorio</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="location">Location (Optional)</Label>
+              <Label htmlFor="location">Ubicación (Opcional)</Label>
               <Input 
                 id="location" 
                 name="location" 
-                placeholder="e.g., Zoom or Office" 
+                placeholder="p.ej., Zoom u Oficina" 
                 className="rounded-xl border-border/50 bg-white/50"
                 data-testid="input-location"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">Descripción (Opcional)</Label>
               <Textarea 
                 id="description" 
                 name="description" 
-                placeholder="Add details..." 
+                placeholder="Agregar detalles..." 
                 className="rounded-xl border-border/50 bg-white/50 resize-none min-h-[80px]"
                 data-testid="input-description"
               />
@@ -372,7 +372,7 @@ export default function CalendarPage() {
 
             <DialogFooter className="pt-4">
               <DialogClose asChild>
-                <Button type="button" variant="ghost" className="rounded-xl" data-testid="button-cancel">Cancel</Button>
+                <Button type="button" variant="ghost" className="rounded-xl" data-testid="button-cancel">Cancelar</Button>
               </DialogClose>
               <Button 
                 type="submit" 
@@ -380,7 +380,7 @@ export default function CalendarPage() {
                 disabled={createEventMutation.isPending}
                 data-testid="button-create-event"
               >
-                {createEventMutation.isPending ? "Creating..." : "Create Event"}
+                {createEventMutation.isPending ? "Creando..." : "Crear Evento"}
               </Button>
             </DialogFooter>
           </form>
