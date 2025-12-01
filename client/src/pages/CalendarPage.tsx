@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { DayPicker, DayClickEventHandler } from "react-day-picker";
 import "react-day-picker/style.css";
 import { format, isSameDay, startOfToday } from "date-fns";
+import { es } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Calendar as CalendarIcon, 
@@ -160,6 +161,7 @@ export default function CalendarPage() {
               selected={selectedDate}
               onDayClick={handleDayClick}
               showOutsideDays
+              locale={es}
               className="mx-auto w-full flex justify-center"
               modifiersClassNames={{
                 selected: "bg-primary text-white rounded-full hover:bg-primary hover:text-white",
@@ -169,7 +171,7 @@ export default function CalendarPage() {
             
             <div className="mt-auto pt-6 border-t border-border/50">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{format(new Date(), 'MMMM yyyy')}</span>
+                <span>{format(new Date(), 'MMMM yyyy', { locale: es })}</span>
                 <div className="flex gap-2">
                    <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100">Work</Badge>
                    <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100">Personal</Badge>
@@ -190,7 +192,7 @@ export default function CalendarPage() {
           <div className="p-8 border-b border-border/40 flex items-center justify-between bg-white/40">
             <div>
               <h2 className="text-3xl font-display font-bold text-gray-800">
-                {selectedDate ? format(selectedDate, 'EEEE, MMMM do') : 'Selecciona una fecha'}
+                {selectedDate ? format(selectedDate, 'EEEE, d MMMM', { locale: es }) : 'Selecciona una fecha'}
               </h2>
               <p className="text-muted-foreground mt-1 flex items-center gap-2" data-testid="text-event-count">
                 {isLoading ? "Cargando..." : `${dayEvents.length} eventos programados`}
