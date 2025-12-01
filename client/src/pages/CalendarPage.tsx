@@ -274,13 +274,6 @@ export default function CalendarPage() {
                   </div>
                   <h3 className="text-lg font-medium text-foreground/80">No hay eventos planeados</h3>
                   <p className="text-sm max-w-xs mx-auto mt-1">Disfruta de tu tiempo libre o agenda algo nuevo.</p>
-                  <Button 
-                    variant="link" 
-                    onClick={() => setIsAddEventOpen(true)} 
-                    className="mt-4 text-primary font-semibold"
-                  >
-                    Programar un evento
-                  </Button>
                 </motion.div>
               )}
             </AnimatePresence>
