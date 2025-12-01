@@ -54,7 +54,7 @@ export default function EventsListPage() {
 
   return (
     <div className="min-h-screen bg-background/50 p-4 md:p-8 font-sans flex justify-center">
-      <div className="w-full max-w-3xl flex flex-col gap-6">
+      <div className="w-full max-w-5xl flex flex-col gap-8">
         
         {/* Header */}
         <motion.div 
@@ -69,7 +69,7 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-display font-bold text-gray-900">Actividades auditorio INACAP</h1>
+              <h1 className="text-4xl font-display font-bold text-gray-900">Actividades auditorio INACAP</h1>
             </div>
           </div>
           
@@ -78,10 +78,10 @@ export default function EventsListPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex flex-col items-center min-w-[140px]">
-              <span className="font-bold text-gray-900 text-sm">
+              <span className="font-bold text-gray-900 text-lg">
                 {format(currentDate, 'EEEE', { locale: es })}
               </span>
-              <span className="text-xs text-muted-foreground font-medium">
+              <span className="text-sm text-muted-foreground font-medium">
                 {format(currentDate, 'd MMMM yyyy', { locale: es })}
               </span>
             </div>
@@ -105,10 +105,10 @@ export default function EventsListPage() {
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden min-h-[500px] flex flex-col"
+          className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden min-h-[700px] flex flex-col"
         >
           <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center">
-             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+             <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
                <CalendarIcon className="h-5 w-5 text-primary" />
                Actividades ({dayEvents.length})
              </h2>
@@ -157,7 +157,7 @@ export default function EventsListPage() {
 
                       {/* Event Card */}
                       <div className={cn(
-                        "flex-1 p-5 rounded-2xl border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden bg-white",
+                        "flex-1 p-8 rounded-2xl border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden bg-white",
                         eventTypeColors[event.type as EventType]
                       )}>
                         {/* Left accent border */}
@@ -165,21 +165,21 @@ export default function EventsListPage() {
                         
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-lg mb-1 text-gray-900">{event.title}</h3>
+                            <h3 className="font-bold text-2xl mb-3 text-gray-900">{event.title}</h3>
                             
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm opacity-80 font-medium mb-3">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base opacity-80 font-medium mb-3">
                                {event.location && (
                                  <span className="flex items-center gap-1.5">
-                                   <MapPin className="h-3.5 w-3.5" /> {event.location}
+                                   <MapPin className="h-5 w-5" /> {event.location}
                                  </span>
                                )}
                                <span className="flex items-center gap-1.5">
-                                  <Clock className="h-3.5 w-3.5" /> {event.startTime} - {event.endTime}
+                                  <Clock className="h-5 w-5" /> {event.startTime} - {event.endTime}
                                </span>
                             </div>
 
                             {event.description && (
-                              <p className="text-sm opacity-70 leading-relaxed">{event.description}</p>
+                              <p className="text-base opacity-70 leading-relaxed">{event.description}</p>
                             )}
                           </div>
                           
