@@ -8,6 +8,7 @@ import {
   isToday, 
   isSameDay,
 } from "date-fns";
+import { es } from "date-fns/locale";
 import { 
   ArrowLeft, 
   ChevronLeft, 
@@ -23,20 +24,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { getAllEvents } from "@/lib/api";
 
-type EventType = "meeting" | "personal" | "work" | "reminder";
+type EventType = "interno" | "externo";
 
 const eventTypeColors: Record<EventType, string> = {
-  meeting: "bg-blue-100 text-blue-700 border-blue-200",
-  personal: "bg-green-100 text-green-700 border-green-200",
-  work: "bg-purple-100 text-purple-700 border-purple-200",
-  reminder: "bg-orange-100 text-orange-700 border-orange-200",
+  interno: "bg-blue-100 text-blue-700 border-blue-200",
+  externo: "bg-green-100 text-green-700 border-green-200",
 };
 
 const eventTypeBorderColors: Record<EventType, string> = {
-  meeting: "border-blue-500",
-  personal: "border-green-500",
-  work: "border-purple-500",
-  reminder: "border-orange-500",
+  interno: "border-blue-500",
+  externo: "border-green-500",
 };
 
 export default function EventsListPage() {
@@ -83,10 +80,10 @@ export default function EventsListPage() {
             </Button>
             <div className="flex flex-col items-center min-w-[140px]">
               <span className="font-bold text-gray-900 text-sm">
-                {format(currentDate, 'EEEE')}
+                {format(currentDate, 'EEEE', { locale: es })}
               </span>
               <span className="text-xs text-muted-foreground font-medium">
-                {format(currentDate, 'MMMM do, yyyy')}
+                {format(currentDate, 'd MMMM yyyy', { locale: es })}
               </span>
             </div>
             <Button variant="ghost" size="icon" onClick={nextDay} className="rounded-full h-9 w-9" data-testid="button-next-day">
@@ -205,11 +202,6 @@ export default function EventsListPage() {
                     </div>
                     <h3 className="text-xl font-medium text-foreground/80 mb-2">No hay actividades programadas</h3>
                     <p className="text-base max-w-xs mx-auto mb-6 opacity-70">Tu día está completamente libre. ¡Es hora de relajarse o planificar algo nuevo!</p>
-                    <Link href="/">
-                       <Button className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
-                          Ir al Calendario para Agregar Eventos
-                       </Button>
-                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
