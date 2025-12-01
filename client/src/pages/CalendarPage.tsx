@@ -41,13 +41,11 @@ import { getAllEvents, createEvent } from "@/lib/api";
 import type { InsertEvent } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
-type EventType = "meeting" | "personal" | "work" | "reminder";
+type EventType = "interno" | "externo";
 
 const eventTypeColors: Record<EventType, string> = {
-  meeting: "bg-blue-100 text-blue-700 border-blue-200",
-  personal: "bg-green-100 text-green-700 border-green-200",
-  work: "bg-purple-100 text-purple-700 border-purple-200",
-  reminder: "bg-orange-100 text-orange-700 border-orange-200",
+  interno: "bg-blue-100 text-blue-700 border-blue-200",
+  externo: "bg-green-100 text-green-700 border-green-200",
 };
 
 export default function CalendarPage() {
@@ -97,7 +95,7 @@ export default function CalendarPage() {
       date: selectedDate || new Date(),
       startTime: formData.get("startTime") as string || "09:00",
       endTime: formData.get("endTime") as string || "10:00",
-      type: formData.get("type") as EventType || "work",
+      type: formData.get("type") as EventType || "interno",
       location: (formData.get("location") as string) || undefined,
       description: (formData.get("description") as string) || undefined,
     };
@@ -173,8 +171,8 @@ export default function CalendarPage() {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{format(new Date(), 'MMMM yyyy', { locale: es })}</span>
                 <div className="flex gap-2">
-                   <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100">Work</Badge>
-                   <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100">Personal</Badge>
+                   <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100">Interno</Badge>
+                   <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100">Externo</Badge>
                 </div>
               </div>
             </div>
@@ -238,7 +236,7 @@ export default function CalendarPage() {
                         eventTypeColors[event.type as EventType]
                       )}>
                         {/* Decor bar */}
-                        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", event.type === 'work' ? 'bg-purple-400' : event.type === 'personal' ? 'bg-green-400' : event.type === 'meeting' ? 'bg-blue-400' : 'bg-orange-400')} />
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", event.type === 'interno' ? 'bg-blue-400' : 'bg-green-400')} />
                         
                         <div className="flex justify-between items-start">
                           <div>
@@ -337,15 +335,13 @@ export default function CalendarPage() {
 
             <div className="space-y-2">
               <Label htmlFor="type">Tipo</Label>
-              <Select name="type" defaultValue="work">
+              <Select name="type" defaultValue="interno">
                 <SelectTrigger className="rounded-xl border-border/50 bg-white/50" data-testid="select-type">
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="work">Trabajo</SelectItem>
-                  <SelectItem value="personal">Personal</SelectItem>
-                  <SelectItem value="meeting">Reunión</SelectItem>
-                  <SelectItem value="reminder">Recordatorio</SelectItem>
+                  <SelectItem value="interno">Interno</SelectItem>
+                  <SelectItem value="externo">Externo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
