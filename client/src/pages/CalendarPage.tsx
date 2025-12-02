@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "wouter";
 import { DayPicker, DayClickEventHandler } from "react-day-picker";
 import "react-day-picker/style.css";
-import { format, isSameDay, startOfToday } from "date-fns";
+import { format, isSameDay, startOfToday, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -17,7 +17,9 @@ import {
   Search,
   List,
   X,
-  Minus
+  Minus,
+  CalendarDays,
+  CalendarRange
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -52,11 +54,21 @@ const eventTypeColors: Record<EventType, string> = {
   externo: "bg-green-100 text-green-700 border-green-200",
 };
 
+type ViewMode = "week" | "month";
+
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(startOfToday());
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const weekDays = selectedDate 
+    ? eachDayOfInterval({
+        start: startOfWeek(selectedDate, { locale: es }),
+        end: endOfWeek(selectedDate, { locale: es })
+      })
+    : [];
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["events"],
@@ -188,24 +200,99 @@ export default function CalendarPage() {
 
           {/* Date Picker Card */}
           <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50 flex-1 flex flex-col">
-             <style>{`
+            {/* View Mode Toggle */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Button
+                variant={viewMode === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("week")}
+                className="rounded-xl gap-2"
+                data-testid="button-view-week"
+              >
+                <CalendarRange size={16} />
+                Semana
+              </Button>
+              <Button
+                variant={viewMode === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("month")}
+                className="rounded-xl gap-2"
+                data-testid="button-view-month"
+              >
+                <CalendarDays size={16} />
+                Mes
+              </Button>
+            </div>
+
+            <style>{`
               .rdp { --rdp-cell-size: 40px; --rdp-accent-color: hsl(var(--primary)); --rdp-background-color: hsl(var(--accent)); margin: 0; }
               .rdp-day_selected:not([disabled]) { background-color: var(--rdp-accent-color); color: white; font-weight: bold; }
               .rdp-day_selected:hover:not([disabled]) { background-color: var(--rdp-accent-color); opacity: 0.8; }
               .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: var(--rdp-background-color); color: var(--rdp-accent-color); }
             `}</style>
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onDayClick={handleDayClick}
-              showOutsideDays
-              locale={es}
-              className="mx-auto w-full flex justify-center"
-              modifiersClassNames={{
-                selected: "bg-primary text-white rounded-full hover:bg-primary hover:text-white",
-                today: "text-primary font-bold"
-              }}
-            />
+
+            {viewMode === "month" ? (
+              <DayPicker
+                mode="single"
+                selected={selectedDate}
+                onDayClick={handleDayClick}
+                showOutsideDays
+                locale={es}
+                className="mx-auto w-full flex justify-center"
+                modifiersClassNames={{
+                  selected: "bg-primary text-white rounded-full hover:bg-primary hover:text-white",
+                  today: "text-primary font-bold"
+                }}
+              />
+            ) : (
+              <div className="flex-1">
+                <div className="text-center mb-4">
+                  <h3 className="font-semibold text-gray-800">
+                    {selectedDate && `Semana del ${format(startOfWeek(selectedDate, { locale: es }), 'd', { locale: es })} - ${format(endOfWeek(selectedDate, { locale: es }), 'd MMMM yyyy', { locale: es })}`}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {weekDays.map((day, index) => {
+                    const dayHasEvents = events.some(event => isSameDay(event.date, day));
+                    const isSelected = selectedDate && isSameDay(day, selectedDate);
+                    const isToday = isSameDay(day, new Date());
+                    
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedDate(day)}
+                        className={cn(
+                          "flex flex-col items-center p-2 rounded-xl transition-all",
+                          isSelected 
+                            ? "bg-primary text-white" 
+                            : isToday 
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "hover:bg-muted",
+                          "cursor-pointer"
+                        )}
+                        data-testid={`button-day-${format(day, 'yyyy-MM-dd')}`}
+                      >
+                        <span className="text-xs font-medium opacity-70">
+                          {capitalize(format(day, 'EEE', { locale: es }))}
+                        </span>
+                        <span className={cn(
+                          "text-lg font-bold mt-1",
+                          isSelected ? "text-white" : ""
+                        )}>
+                          {format(day, 'd')}
+                        </span>
+                        {dayHasEvents && (
+                          <div className={cn(
+                            "w-1.5 h-1.5 rounded-full mt-1",
+                            isSelected ? "bg-white" : "bg-primary"
+                          )} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             <div className="mt-auto pt-6 border-t border-border/50">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
