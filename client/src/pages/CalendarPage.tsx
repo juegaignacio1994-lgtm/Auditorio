@@ -16,7 +16,8 @@ import {
   Bell,
   Search,
   List,
-  X
+  X,
+  Minus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getAllEvents, createEvent, cancelEvent } from "@/lib/api";
+import { getAllEvents, createEvent, cancelEvent, deleteEvent } from "@/lib/api";
 import type { InsertEvent } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -88,6 +89,24 @@ export default function CalendarPage() {
       toast({
         title: "Evento cancelado",
         description: "El evento ha sido marcado como cancelado.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: deleteEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast({
+        title: "Evento eliminado",
+        description: "El evento ha sido eliminado permanentemente.",
       });
     },
     onError: (error: Error) => {
@@ -303,6 +322,19 @@ export default function CalendarPage() {
                                   data-testid={`button-cancel-event-${event.id}`}
                                 >
                                   <X size={14} />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-7 w-7 rounded-full text-red-600 hover:text-red-800 hover:bg-red-200"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteEventMutation.mutate(event.id);
+                                  }}
+                                  disabled={deleteEventMutation.isPending}
+                                  data-testid={`button-delete-event-${event.id}`}
+                                >
+                                  <Minus size={14} />
                                 </Button>
                               </>
                             )}
