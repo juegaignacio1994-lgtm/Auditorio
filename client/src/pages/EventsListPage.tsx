@@ -115,13 +115,13 @@ export default function EventsListPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3 bg-primary/10 rounded-full px-6 py-3 border border-primary/20">
-            <CalendarIcon className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-3 bg-red-600 rounded-md px-6 py-3 mr-auto sm:mr-0 sm:ml-4">
+            <CalendarIcon className="h-5 w-5 text-white" />
             <div className="flex flex-col items-center">
-              <span className="font-bold text-primary text-lg" data-testid="text-current-day">
+              <span className="font-bold text-white text-lg" data-testid="text-current-day">
                 {capitalize(format(currentDate, 'EEEE', { locale: es }))}
               </span>
-              <span className="text-sm text-primary/80 font-medium" data-testid="text-current-date">
+              <span className="text-sm text-white/90 font-medium" data-testid="text-current-date">
                 {format(currentDate, 'd', { locale: es })} de {capitalize(format(currentDate, 'MMMM', { locale: es }))} {format(currentDate, 'yyyy', { locale: es })}
               </span>
             </div>
@@ -138,7 +138,7 @@ export default function EventsListPage() {
           <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center gap-4 flex-wrap">
              <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
                <CalendarIcon className="h-5 w-5 text-primary" />
-               Actividades de Hoy ({dayEvents.length})
+               Programación del día ({dayEvents.length})
              </h2>
              {dayEvents.length > 0 && (
                <span className="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
