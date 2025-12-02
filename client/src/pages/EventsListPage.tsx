@@ -71,9 +71,9 @@ export default function EventsListPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <div>
+            <div className="flex flex-col items-center">
               <h1 className="text-4xl font-display font-bold text-gray-900">Actividades Auditorio INACAP</h1>
-              <img src={inacapLogo} alt="INACAP Sede Puerto Montt" className="h-8 mt-2" data-testid="img-inacap-logo" />
+              <img src={inacapLogo} alt="INACAP Sede Puerto Montt" className="h-10 mt-2" data-testid="img-inacap-logo" />
             </div>
           </div>
           
