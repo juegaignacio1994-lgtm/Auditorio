@@ -9,6 +9,8 @@ import {
   isSameDay,
 } from "date-fns";
 import { es } from "date-fns/locale";
+
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 import { 
   ArrowLeft, 
   ChevronLeft, 
@@ -69,7 +71,7 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-4xl font-display font-bold text-gray-900">Actividades auditorio INACAP</h1>
+              <h1 className="text-4xl font-display font-bold text-gray-900">Actividades Auditorio INACAP</h1>
             </div>
           </div>
           
@@ -79,10 +81,10 @@ export default function EventsListPage() {
             </Button>
             <div className="flex flex-col items-center min-w-[140px]">
               <span className="font-bold text-gray-900 text-lg">
-                {format(currentDate, 'EEEE', { locale: es })}
+                {capitalize(format(currentDate, 'EEEE', { locale: es }))}
               </span>
               <span className="text-sm text-muted-foreground font-medium">
-                {format(currentDate, 'd MMMM yyyy', { locale: es })}
+                {format(currentDate, 'd', { locale: es })} {capitalize(format(currentDate, 'MMMM', { locale: es }))} {format(currentDate, 'yyyy', { locale: es })}
               </span>
             </div>
             <Button variant="ghost" size="icon" onClick={nextDay} className="rounded-full h-9 w-9" data-testid="button-next-day">
