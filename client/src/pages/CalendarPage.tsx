@@ -15,7 +15,8 @@ import {
   MoreHorizontal,
   Bell,
   Search,
-  List
+  List,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getAllEvents, createEvent } from "@/lib/api";
+import { getAllEvents, createEvent, cancelEvent } from "@/lib/api";
 import type { InsertEvent } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -69,6 +70,24 @@ export default function CalendarPage() {
       toast({
         title: "Evento creado",
         description: "Tu evento ha sido agregado al calendario.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cancelEventMutation = useMutation({
+    mutationFn: cancelEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast({
+        title: "Evento cancelado",
+        description: "El evento ha sido marcado como cancelado.",
       });
     },
     onError: (error: Error) => {
@@ -228,24 +247,29 @@ export default function CalendarPage() {
                     <div className="flex gap-6">
                       {/* Time Column */}
                       <div className="w-16 pt-3 text-right">
-                        <span className="text-sm font-medium text-gray-900 block" data-testid={`text-start-time-${event.id}`}>{event.startTime}</span>
-                        <span className="text-xs text-muted-foreground block" data-testid={`text-end-time-${event.id}`}>{event.endTime}</span>
+                        <span className={cn("text-sm font-medium block", event.cancelled ? "text-gray-400 line-through" : "text-gray-900")} data-testid={`text-start-time-${event.id}`}>{event.startTime}</span>
+                        <span className={cn("text-xs block", event.cancelled ? "text-gray-400 line-through" : "text-muted-foreground")} data-testid={`text-end-time-${event.id}`}>{event.endTime}</span>
                       </div>
 
                       {/* Event Card */}
                       <div className={cn(
-                        "flex-1 p-5 rounded-2xl border transition-all duration-300 hover:shadow-md cursor-pointer relative overflow-hidden",
-                        eventTypeColors[event.type as EventType]
+                        "flex-1 p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden",
+                        event.cancelled 
+                          ? "bg-red-50 text-red-700 border-red-200 opacity-75" 
+                          : cn(eventTypeColors[event.type as EventType], "hover:shadow-md cursor-pointer")
                       )}>
                         {/* Decor bar */}
-                        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", event.type === 'interno' ? 'bg-blue-400' : 'bg-green-400')} />
+                        <div className={cn(
+                          "absolute left-0 top-0 bottom-0 w-1.5", 
+                          event.cancelled ? 'bg-red-400' : (event.type === 'interno' ? 'bg-blue-400' : 'bg-green-400')
+                        )} />
                         
                         <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-bold text-lg mb-1" data-testid={`text-title-${event.id}`}>{event.title}</h3>
-                            {event.description && <p className="text-sm opacity-80 mb-2 line-clamp-1">{event.description}</p>}
+                          <div className="flex-1">
+                            <h3 className={cn("font-bold text-lg mb-1", event.cancelled && "line-through")} data-testid={`text-title-${event.id}`}>{event.title}</h3>
+                            {event.description && <p className={cn("text-sm opacity-80 mb-2 line-clamp-1", event.cancelled && "line-through")}>{event.description}</p>}
                             
-                            <div className="flex items-center gap-4 text-xs font-medium opacity-70 mt-3">
+                            <div className={cn("flex items-center gap-4 text-xs font-medium opacity-70 mt-3", event.cancelled && "line-through")}>
                                <span className="flex items-center gap-1">
                                  <Clock size={12} /> {event.endTime}
                                </span>
@@ -257,9 +281,32 @@ export default function CalendarPage() {
                             </div>
                           </div>
                           
-                          <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-0 text-current capitalize shadow-sm" data-testid={`badge-type-${event.id}`}>
-                            {event.type}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {event.cancelled ? (
+                              <Badge variant="destructive" className="shadow-sm" data-testid={`badge-cancelled-${event.id}`}>
+                                Cancelado
+                              </Badge>
+                            ) : (
+                              <>
+                                <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-0 text-current capitalize shadow-sm" data-testid={`badge-type-${event.id}`}>
+                                  {event.type}
+                                </Badge>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-7 w-7 rounded-full text-red-500 hover:text-red-700 hover:bg-red-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    cancelEventMutation.mutate(event.id);
+                                  }}
+                                  disabled={cancelEventMutation.isPending}
+                                  data-testid={`button-cancel-event-${event.id}`}
+                                >
+                                  <X size={14} />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

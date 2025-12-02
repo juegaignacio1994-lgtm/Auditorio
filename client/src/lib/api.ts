@@ -69,3 +69,25 @@ export async function deleteEvent(id: string): Promise<void> {
     throw new Error(error.error || "Failed to delete event");
   }
 }
+
+export async function cancelEvent(id: string): Promise<Event> {
+  const response = await fetch(`${API_BASE}/events/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ cancelled: true }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to cancel event");
+  }
+  
+  const updated = await response.json();
+  return {
+    ...updated,
+    date: new Date(updated.date),
+    createdAt: new Date(updated.createdAt),
+  };
+}

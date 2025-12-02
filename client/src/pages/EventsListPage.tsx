@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { getAllEvents } from "@/lib/api";
+import inacapLogo from "@assets/thumbnail_Outlook-o4d0fj3m_1764687146741.png";
 
 type EventType = "interno" | "externo";
 
@@ -72,6 +73,7 @@ export default function EventsListPage() {
             </Link>
             <div>
               <h1 className="text-4xl font-display font-bold text-gray-900">Actividades Auditorio INACAP</h1>
+              <img src={inacapLogo} alt="INACAP Sede Puerto Montt" className="h-8 mt-2" data-testid="img-inacap-logo" />
             </div>
           </div>
           
