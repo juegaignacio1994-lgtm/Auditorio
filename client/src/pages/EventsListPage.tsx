@@ -72,7 +72,7 @@ export default function EventsListPage() {
               </Button>
             </Link>
             <div className="flex flex-col items-center">
-              <h1 className="text-4xl font-display font-bold text-gray-900">Actividades Auditorio INACAP</h1>
+              <h1 className="text-4xl font-display font-bold text-gray-900">Actividades Auditorio</h1>
               <img src={inacapLogo} alt="INACAP Sede Puerto Montt" className="h-10 mt-2" data-testid="img-inacap-logo" />
             </div>
           </div>
@@ -147,8 +147,8 @@ export default function EventsListPage() {
                       {/* Time Column */}
                       <div className="w-full sm:w-16 pt-1 text-left sm:text-right flex-shrink-0 flex sm:block justify-between items-center">
                         <div>
-                          <span className="text-sm font-bold text-gray-900 block">{event.startTime}</span>
-                          <span className="text-xs text-muted-foreground block opacity-60">{event.endTime}</span>
+                          <span className={cn("text-sm font-bold block", event.cancelled ? "text-gray-400 line-through" : "text-gray-900")}>{event.startTime}</span>
+                          <span className={cn("text-xs block opacity-60", event.cancelled ? "text-gray-400 line-through" : "text-muted-foreground")}>{event.endTime}</span>
                         </div>
                         {/* Mobile line connector */}
                         <div className="h-px flex-1 bg-border/50 mx-4 sm:hidden" />
@@ -156,22 +156,24 @@ export default function EventsListPage() {
 
                       {/* Timeline Dot */}
                       <div className="absolute left-[4.5rem] top-1.5 -ml-[5px] hidden sm:flex h-2.5 w-2.5 rounded-full border-2 border-white ring-1 ring-border bg-muted z-10 items-center justify-center">
-                         <div className={cn("h-1.5 w-1.5 rounded-full", eventTypeColors[event.type as EventType].replace('bg-', 'bg-opacity-100 bg-').split(' ')[0])} />
+                         <div className={cn("h-1.5 w-1.5 rounded-full", event.cancelled ? "bg-red-400" : eventTypeColors[event.type as EventType].replace('bg-', 'bg-opacity-100 bg-').split(' ')[0])} />
                       </div>
 
                       {/* Event Card */}
                       <div className={cn(
-                        "flex-1 p-8 rounded-2xl border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden bg-white",
-                        eventTypeColors[event.type as EventType]
+                        "flex-1 p-8 rounded-2xl border transition-all duration-300 relative overflow-hidden",
+                        event.cancelled 
+                          ? "bg-red-50 text-red-700 border-red-200 opacity-75" 
+                          : cn("bg-white hover:shadow-md hover:-translate-y-0.5", eventTypeColors[event.type as EventType])
                       )}>
                         {/* Left accent border */}
-                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", eventTypeBorderColors[event.type as EventType].replace('border-', 'bg-'))} />
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", event.cancelled ? "bg-red-400" : eventTypeBorderColors[event.type as EventType].replace('border-', 'bg-'))} />
                         
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-2xl mb-3 text-gray-900">{event.title}</h3>
+                            <h3 className={cn("font-bold text-2xl mb-3", event.cancelled ? "line-through text-red-700" : "text-gray-900")}>{event.title}</h3>
                             
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base opacity-80 font-medium mb-3">
+                            <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 text-base opacity-80 font-medium mb-3", event.cancelled && "line-through")}>
                                {event.location && (
                                  <span className="flex items-center gap-1.5">
                                    <MapPin className="h-5 w-5" /> {event.location}
@@ -183,13 +185,19 @@ export default function EventsListPage() {
                             </div>
 
                             {event.description && (
-                              <p className="text-base opacity-70 leading-relaxed">{event.description}</p>
+                              <p className={cn("text-base opacity-70 leading-relaxed", event.cancelled && "line-through")}>{event.description}</p>
                             )}
                           </div>
                           
-                          <Badge variant="secondary" className="bg-white/60 backdrop-blur-sm border-0 text-current capitalize shadow-sm flex-shrink-0">
-                            {event.type}
-                          </Badge>
+                          {event.cancelled ? (
+                            <Badge variant="destructive" className="shadow-sm flex-shrink-0">
+                              Cancelado
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-white/60 backdrop-blur-sm border-0 text-current capitalize shadow-sm flex-shrink-0">
+                              {event.type}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </motion.div>
