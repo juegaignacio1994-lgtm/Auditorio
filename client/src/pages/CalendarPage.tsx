@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "wouter";
 import { DayPicker, DayClickEventHandler } from "react-day-picker";
 import "react-day-picker/style.css";
-import { format, isSameDay, startOfToday, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
+import { format, isSameDay, startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { es } from "date-fns/locale";
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -62,13 +62,6 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  const weekDays = selectedDate 
-    ? eachDayOfInterval({
-        start: startOfWeek(selectedDate, { locale: es }),
-        end: endOfWeek(selectedDate, { locale: es })
-      })
-    : [];
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["events"],
@@ -130,9 +123,23 @@ export default function CalendarPage() {
     },
   });
   
-  const dayEvents = events.filter(event => 
-    selectedDate && isSameDay(event.date, selectedDate)
-  ).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const filteredEvents = events.filter(event => {
+    if (!selectedDate) return false;
+    
+    if (viewMode === "week") {
+      const weekStart = startOfWeek(selectedDate, { locale: es });
+      const weekEnd = endOfWeek(selectedDate, { locale: es });
+      return isWithinInterval(event.date, { start: weekStart, end: weekEnd });
+    } else {
+      const monthStart = startOfMonth(selectedDate);
+      const monthEnd = endOfMonth(selectedDate);
+      return isWithinInterval(event.date, { start: monthStart, end: monthEnd });
+    }
+  }).sort((a, b) => {
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+    return a.startTime.localeCompare(b.startTime);
+  });
 
   const handleDayClick: DayClickEventHandler = (day) => {
     setSelectedDate(day);
@@ -200,30 +207,6 @@ export default function CalendarPage() {
 
           {/* Date Picker Card */}
           <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50 flex-1 flex flex-col">
-            {/* View Mode Toggle */}
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Button
-                variant={viewMode === "week" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("week")}
-                className="rounded-xl gap-2"
-                data-testid="button-view-week"
-              >
-                <CalendarRange size={16} />
-                Semana
-              </Button>
-              <Button
-                variant={viewMode === "month" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("month")}
-                className="rounded-xl gap-2"
-                data-testid="button-view-month"
-              >
-                <CalendarDays size={16} />
-                Mes
-              </Button>
-            </div>
-
             <style>{`
               .rdp { --rdp-cell-size: 40px; --rdp-accent-color: hsl(var(--primary)); --rdp-background-color: hsl(var(--accent)); margin: 0; }
               .rdp-day_selected:not([disabled]) { background-color: var(--rdp-accent-color); color: white; font-weight: bold; }
@@ -231,68 +214,18 @@ export default function CalendarPage() {
               .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: var(--rdp-background-color); color: var(--rdp-accent-color); }
             `}</style>
 
-            {viewMode === "month" ? (
-              <DayPicker
-                mode="single"
-                selected={selectedDate}
-                onDayClick={handleDayClick}
-                showOutsideDays
-                locale={es}
-                className="mx-auto w-full flex justify-center"
-                modifiersClassNames={{
-                  selected: "bg-primary text-white rounded-full hover:bg-primary hover:text-white",
-                  today: "text-primary font-bold"
-                }}
-              />
-            ) : (
-              <div className="flex-1">
-                <div className="text-center mb-4">
-                  <h3 className="font-semibold text-gray-800">
-                    {selectedDate && `Semana del ${format(startOfWeek(selectedDate, { locale: es }), 'd', { locale: es })} - ${format(endOfWeek(selectedDate, { locale: es }), 'd MMMM yyyy', { locale: es })}`}
-                  </h3>
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {weekDays.map((day, index) => {
-                    const dayHasEvents = events.some(event => isSameDay(event.date, day));
-                    const isSelected = selectedDate && isSameDay(day, selectedDate);
-                    const isToday = isSameDay(day, new Date());
-                    
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedDate(day)}
-                        className={cn(
-                          "flex flex-col items-center p-2 rounded-xl transition-all",
-                          isSelected 
-                            ? "bg-primary text-white" 
-                            : isToday 
-                              ? "bg-primary/10 text-primary font-bold"
-                              : "hover:bg-muted",
-                          "cursor-pointer"
-                        )}
-                        data-testid={`button-day-${format(day, 'yyyy-MM-dd')}`}
-                      >
-                        <span className="text-xs font-medium opacity-70">
-                          {capitalize(format(day, 'EEE', { locale: es }))}
-                        </span>
-                        <span className={cn(
-                          "text-lg font-bold mt-1",
-                          isSelected ? "text-white" : ""
-                        )}>
-                          {format(day, 'd')}
-                        </span>
-                        {dayHasEvents && (
-                          <div className={cn(
-                            "w-1.5 h-1.5 rounded-full mt-1",
-                            isSelected ? "bg-white" : "bg-primary"
-                          )} />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <DayPicker
+              mode="single"
+              selected={selectedDate}
+              onDayClick={handleDayClick}
+              showOutsideDays
+              locale={es}
+              className="mx-auto w-full flex justify-center"
+              modifiersClassNames={{
+                selected: "bg-primary text-white rounded-full hover:bg-primary hover:text-white",
+                today: "text-primary font-bold"
+              }}
+            />
             
             <div className="mt-auto pt-6 border-t border-border/50">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -317,30 +250,57 @@ export default function CalendarPage() {
           <div className="p-8 border-b border-border/40 flex items-center justify-between bg-white/40">
             <div>
               <h2 className="text-3xl font-display font-bold text-gray-800">
-                {selectedDate ? `${capitalize(format(selectedDate, 'EEEE', { locale: es }))}, ${format(selectedDate, 'd', { locale: es })} ${capitalize(format(selectedDate, 'MMMM', { locale: es }))}` : 'Selecciona una fecha'}
+                {selectedDate ? (
+                  viewMode === "week" 
+                    ? `Semana del ${format(startOfWeek(selectedDate, { locale: es }), 'd', { locale: es })} - ${format(endOfWeek(selectedDate, { locale: es }), 'd MMMM', { locale: es })}`
+                    : `${capitalize(format(selectedDate, 'MMMM yyyy', { locale: es }))}`
+                ) : 'Selecciona una fecha'}
               </h2>
               <p className="text-muted-foreground mt-1 flex items-center gap-2" data-testid="text-event-count">
-                {isLoading ? "Cargando..." : `${dayEvents.length} eventos programados`}
+                {isLoading ? "Cargando..." : `${filteredEvents.length} eventos programados`}
               </p>
             </div>
-            <div className="flex gap-3">
-               <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-border/60 bg-white/50">
-                 <Search className="h-4 w-4 text-muted-foreground" />
-               </Button>
-               <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-border/60 bg-white/50">
-                 <Bell className="h-4 w-4 text-muted-foreground" />
-               </Button>
-               <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
-                 <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-               </Button>
+            <div className="flex items-center gap-3">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-muted/50 rounded-full p-1">
+                <Button
+                  variant={viewMode === "week" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("week")}
+                  className="rounded-full gap-1.5 h-8"
+                  data-testid="button-view-week"
+                >
+                  <CalendarRange size={14} />
+                  Semana
+                </Button>
+                <Button
+                  variant={viewMode === "month" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("month")}
+                  className="rounded-full gap-1.5 h-8"
+                  data-testid="button-view-month"
+                >
+                  <CalendarDays size={14} />
+                  Mes
+                </Button>
+              </div>
+              <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-border/60 bg-white/50">
+                <Search className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-border/60 bg-white/50">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
+                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+              </Button>
             </div>
           </div>
 
           {/* Events List */}
           <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-gradient-to-b from-transparent to-white/30">
             <AnimatePresence mode="popLayout">
-              {dayEvents.length > 0 ? (
-                dayEvents.map((event, index) => (
+              {filteredEvents.length > 0 ? (
+                filteredEvents.map((event, index) => (
                   <motion.div
                     key={event.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -352,7 +312,10 @@ export default function CalendarPage() {
                   >
                     <div className="flex gap-6">
                       {/* Time Column */}
-                      <div className="w-16 pt-3 text-right">
+                      <div className="w-20 pt-3 text-right">
+                        <span className={cn("text-xs font-semibold block", event.cancelled ? "text-gray-400" : "text-primary")} data-testid={`text-date-${event.id}`}>
+                          {capitalize(format(event.date, 'EEE d', { locale: es }))}
+                        </span>
                         <span className={cn("text-sm font-medium block", event.cancelled ? "text-gray-400 line-through" : "text-gray-900")} data-testid={`text-start-time-${event.id}`}>{event.startTime}</span>
                         <span className={cn("text-xs block", event.cancelled ? "text-gray-400 line-through" : "text-muted-foreground")} data-testid={`text-end-time-${event.id}`}>{event.endTime}</span>
                       </div>
