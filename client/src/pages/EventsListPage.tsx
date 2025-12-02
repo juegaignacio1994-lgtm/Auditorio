@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -7,10 +7,56 @@ import {
   subDays, 
   isToday, 
   isSameDay,
+  startOfDay,
 } from "date-fns";
 import { es } from "date-fns/locale";
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+function useAutoDateUpdate() {
+  const [currentDate, setCurrentDate] = useState(() => startOfDay(new Date()));
+
+  const checkAndUpdateDate = useCallback(() => {
+    const today = startOfDay(new Date());
+    setCurrentDate(prevDate => {
+      if (!isSameDay(prevDate, today)) {
+        return today;
+      }
+      return prevDate;
+    });
+  }, []);
+
+  useEffect(() => {
+    checkAndUpdateDate();
+    
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const midnightTimeout = setTimeout(() => {
+      checkAndUpdateDate();
+    }, msUntilMidnight);
+    
+    const intervalId = setInterval(checkAndUpdateDate, 60000);
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndUpdateDate();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearTimeout(midnightTimeout);
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [checkAndUpdateDate]);
+
+  return { currentDate, setCurrentDate };
+}
 import { 
   ArrowLeft, 
   ChevronLeft, 
@@ -40,7 +86,7 @@ const eventTypeBorderColors: Record<EventType, string> = {
 };
 
 export default function EventsListPage() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const { currentDate, setCurrentDate } = useAutoDateUpdate();
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["events"],
