@@ -323,21 +323,21 @@ export default function CalendarPage() {
                                 >
                                   <X size={14} />
                                 </Button>
-                                <Button 
-                                  size="icon" 
-                                  variant="ghost" 
-                                  className="h-7 w-7 rounded-full text-red-600 hover:text-red-800 hover:bg-red-200"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteEventMutation.mutate(event.id);
-                                  }}
-                                  disabled={deleteEventMutation.isPending}
-                                  data-testid={`button-delete-event-${event.id}`}
-                                >
-                                  <Minus size={14} />
-                                </Button>
                               </>
                             )}
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-7 w-7 rounded-full text-red-600 hover:text-red-800 hover:bg-red-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteEventMutation.mutate(event.id);
+                              }}
+                              disabled={deleteEventMutation.isPending}
+                              data-testid={`button-delete-event-${event.id}`}
+                            >
+                              <Minus size={14} />
+                            </Button>
                           </div>
                         </div>
                       </div>
