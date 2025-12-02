@@ -49,6 +49,30 @@ export class DbStorage implements IStorage {
   }
 
   async createEvent(event: InsertEvent): Promise<Event> {
+    // Delete existing events at the same date and overlapping time
+    const eventDate = new Date(event.date);
+    eventDate.setHours(0, 0, 0, 0);
+    
+    const existingEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.date, eventDate));
+    
+    // Find and delete events that overlap with the new event's time
+    for (const existing of existingEvents) {
+      const existingStart = existing.startTime;
+      const existingEnd = existing.endTime;
+      const newStart = event.startTime;
+      const newEnd = event.endTime;
+      
+      // Check if times overlap
+      const overlaps = (newStart < existingEnd && newEnd > existingStart);
+      
+      if (overlaps) {
+        await db.delete(events).where(eq(events.id, existing.id));
+      }
+    }
+    
     const [newEvent] = await db.insert(events).values(event).returning();
     return newEvent;
   }
