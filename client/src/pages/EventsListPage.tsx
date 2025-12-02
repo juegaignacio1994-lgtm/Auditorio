@@ -115,13 +115,13 @@ export default function EventsListPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3 bg-red-600 rounded-md px-6 py-3 ml-auto sm:ml-8 mr-auto">
-            <CalendarIcon className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3 px-6 py-3 ml-auto">
+            <CalendarIcon className="h-6 w-6 text-red-600" />
             <div className="flex flex-col items-center">
-              <span className="font-bold text-white text-xl" data-testid="text-current-day">
+              <span className="font-bold text-red-600 text-xl" data-testid="text-current-day">
                 {capitalize(format(currentDate, 'EEEE', { locale: es }))}
               </span>
-              <span className="text-base text-white/90 font-medium" data-testid="text-current-date">
+              <span className="text-base text-red-600/80 font-medium" data-testid="text-current-date">
                 {format(currentDate, 'd', { locale: es })} de {capitalize(format(currentDate, 'MMMM', { locale: es }))} {format(currentDate, 'yyyy', { locale: es })}
               </span>
             </div>
