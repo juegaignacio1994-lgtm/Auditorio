@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
   format, 
-  addDays, 
-  subDays, 
-  isToday, 
   isSameDay,
   startOfDay,
 } from "date-fns";
@@ -55,12 +52,11 @@ function useAutoDateUpdate() {
     };
   }, [checkAndUpdateDate]);
 
-  return { currentDate, setCurrentDate };
+  return currentDate;
 }
+
 import { 
   ArrowLeft, 
-  ChevronLeft, 
-  ChevronRight, 
   Clock, 
   MapPin,
   Calendar as CalendarIcon,
@@ -86,16 +82,12 @@ const eventTypeBorderColors: Record<EventType, string> = {
 };
 
 export default function EventsListPage() {
-  const { currentDate, setCurrentDate } = useAutoDateUpdate();
+  const currentDate = useAutoDateUpdate();
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: getAllEvents,
   });
-
-  const nextDay = () => setCurrentDate(addDays(currentDate, 1));
-  const prevDay = () => setCurrentDate(subDays(currentDate, 1));
-  const jumpToToday = () => setCurrentDate(new Date());
 
   const dayEvents = events
     .filter(event => isSameDay(event.date, currentDate))
@@ -109,7 +101,7 @@ export default function EventsListPage() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50 gap-4"
+          className="flex flex-col sm:flex-row items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50 gap-4"
         >
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -123,31 +115,17 @@ export default function EventsListPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3 bg-white/50 rounded-full p-1.5 border border-border/60 self-center sm:self-auto">
-            <Button variant="ghost" size="icon" onClick={prevDay} className="rounded-full h-9 w-9" data-testid="button-prev-day">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex flex-col items-center min-w-[140px]">
-              <span className="font-bold text-gray-900 text-lg">
+          <div className="flex items-center gap-3 bg-primary/10 rounded-full px-6 py-3 border border-primary/20">
+            <CalendarIcon className="h-5 w-5 text-primary" />
+            <div className="flex flex-col items-center">
+              <span className="font-bold text-primary text-lg" data-testid="text-current-day">
                 {capitalize(format(currentDate, 'EEEE', { locale: es }))}
               </span>
-              <span className="text-sm text-muted-foreground font-medium">
-                {format(currentDate, 'd', { locale: es })} {capitalize(format(currentDate, 'MMMM', { locale: es }))} {format(currentDate, 'yyyy', { locale: es })}
+              <span className="text-sm text-primary/80 font-medium" data-testid="text-current-date">
+                {format(currentDate, 'd', { locale: es })} de {capitalize(format(currentDate, 'MMMM', { locale: es }))} {format(currentDate, 'yyyy', { locale: es })}
               </span>
             </div>
-            <Button variant="ghost" size="icon" onClick={nextDay} className="rounded-full h-9 w-9" data-testid="button-next-day">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
-
-          <Button 
-            variant={isToday(currentDate) ? "default" : "outline"} 
-            onClick={jumpToToday}
-            className="rounded-xl hidden sm:flex"
-            data-testid="button-today"
-          >
-            Hoy
-          </Button>
         </motion.div>
 
         {/* Agenda List */}
@@ -157,10 +135,10 @@ export default function EventsListPage() {
           transition={{ delay: 0.1 }}
           className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden min-h-[700px] flex flex-col"
         >
-          <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center">
+          <div className="p-6 border-b border-border/40 bg-white/40 flex justify-between items-center gap-4 flex-wrap">
              <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
                <CalendarIcon className="h-5 w-5 text-primary" />
-               Actividades ({dayEvents.length})
+               Actividades de Hoy ({dayEvents.length})
              </h2>
              {dayEvents.length > 0 && (
                <span className="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
@@ -210,7 +188,7 @@ export default function EventsListPage() {
                         "flex-1 p-8 rounded-2xl border transition-all duration-300 relative overflow-hidden",
                         event.cancelled 
                           ? "bg-red-50 text-red-700 border-red-200 opacity-75" 
-                          : cn("bg-white hover:shadow-md hover:-translate-y-0.5", eventTypeColors[event.type as EventType])
+                          : cn("bg-white", eventTypeColors[event.type as EventType])
                       )}>
                         {/* Left accent border */}
                         <div className={cn("absolute left-0 top-0 bottom-0 w-1", event.cancelled ? "bg-red-400" : eventTypeBorderColors[event.type as EventType].replace('border-', 'bg-'))} />
@@ -257,7 +235,7 @@ export default function EventsListPage() {
                     <div className="h-24 w-24 bg-muted/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
                       <CalendarIcon className="h-10 w-10 opacity-30" />
                     </div>
-                    <h3 className="text-xl font-medium text-foreground/80 mb-2">No hay actividades programadas</h3>
+                    <h3 className="text-xl font-medium text-foreground/80 mb-2">No hay actividades programadas para hoy</h3>
                   </motion.div>
                 )}
               </AnimatePresence>
