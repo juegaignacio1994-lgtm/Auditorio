@@ -176,7 +176,7 @@ export default function CalendarPage() {
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-white/50">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-display font-bold text-gray-900">Calendario Flow</h1>
+                <h1 className="text-2xl font-display font-bold text-gray-900">Calendario INACAP</h1>
                 <p className="text-muted-foreground text-sm">Administra tu tiempo eficientemente</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
